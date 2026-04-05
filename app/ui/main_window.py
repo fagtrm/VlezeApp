@@ -19,7 +19,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib
 
 from app.i18n import _
-from app.core.config import AppConfig, CONFIG_DIR, CONFIG_FILE
+from app.core.config import AppConfig, CONFIG_DIR, CONFIG_FILE, VLESS_DIR
 from app.core.xray_manager import XrayManager
 from app.core.xray_config import XrayConfigGenerator
 from app.core.ping_checker import PingChecker
@@ -47,7 +47,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.selected_entry: dict[str, Any] | None = None
 
         if self.app_config.is_valid():
-            self.config_store = ConfigStore(self.app_config.get_vless_dir())
+            self.config_store = ConfigStore(VLESS_DIR)
         else:
             GLib.idle_add(self._show_config_error)
 
@@ -415,7 +415,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         # Перезагружаем
-        self.config_store.set_vless_dir(self.app_config.get_vless_dir())
+        self.config_store.set_vless_dir(VLESS_DIR)
 
         # Собираем все entries из всех конфигов
         all_entries: list[dict[str, Any]] = []
@@ -446,7 +446,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Если папка изменилась — перезагрузить конфиги
         if self.config_store:
-            self.config_store.set_vless_dir(self.app_config.get_vless_dir())
+            self.config_store.set_vless_dir(VLESS_DIR)
         self._refresh_configs()
 
         # Обновить трей в зависимости от настройки
@@ -505,7 +505,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         # Перезагружаем конфиги
-        self.config_store.set_vless_dir(self.app_config.get_vless_dir())
+        self.config_store.set_vless_dir(VLESS_DIR)
 
         # Ищем сервер по имени
         for cfg in self.config_store.get_configs():
@@ -535,8 +535,7 @@ class MainWindow(Adw.ApplicationWindow):
         dialog: Adw.AlertDialog = Adw.AlertDialog()
         dialog.set_heading(_("VLESS configs folder not found"))
         dialog.set_body(
-            _("The folder {} does not exist. Create it or change the path "
-              "in the config: {}").format(self.app_config.get_vless_dir(), CONFIG_FILE)
+            _("The folder {} does not exist. Create it.").format(VLESS_DIR)
         )
         dialog.add_response("ok", _("Understood"))
         dialog.present(self)

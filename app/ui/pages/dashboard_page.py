@@ -25,13 +25,7 @@ class DashboardPage(Gtk.Box):
         self.set_margin_top(24)
         self.set_margin_bottom(24)
 
-        # Заголовок
-        title: Gtk.Label = Gtk.Label(label=_("Dashboard"))
-        title.set_halign(Gtk.Align.START)
-        title.add_css_class("title-1")
-        self.append(title)
-
-        # Статус VPN
+        # Статус
         self.status_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.status_box.set_halign(Gtk.Align.FILL)
         self.status_box.set_valign(Gtk.Align.START)
@@ -39,7 +33,7 @@ class DashboardPage(Gtk.Box):
 
         # Карточка статуса
         status_card: Adw.PreferencesGroup = Adw.PreferencesGroup()
-        status_card.set_title(_("VPN Status"))
+        status_card.set_title(_("Status"))
 
         self.status_row: Adw.ActionRow = Adw.ActionRow()
         self.status_row.set_title(_("State"))

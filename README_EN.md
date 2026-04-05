@@ -72,6 +72,18 @@ cd VlezeApp
 python3 main.py
 ```
 
+## 🌐 Localization
+
+The application automatically detects the system language.
+
+### Compile Translations (after cloning)
+
+```bash
+bash scripts/compile_locale.sh
+```
+
+> **Important:** `.mo` files are not stored in the repository. After cloning, always run the compilation script.
+
 ## 📄 License
 
 MIT License — see [LICENSE](LICENSE) for details.

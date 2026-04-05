@@ -128,10 +128,11 @@ class TestParseVlessLink:
         assert result["headerType"] == ""
 
     def test_parse_no_name(self, parser: type[VLESSParser]) -> None:
-        """A link without a fragment should default name to 'Unknown'."""
+        """A link without a fragment should default name to 'Unknown' (or localized equivalent)."""
         link = "vless://uuid@host:443"
         result = parser.parse_vless_link(link)
-        assert result["name"] == "Unknown"
+        # The name is translated via _(), so accept both English and Russian
+        assert result["name"] in ("Unknown", "Неизвестно")
 
     def test_parse_invalid_link(self, parser: type[VLESSParser]) -> None:
         """A link without @ should return defaults with empty id/host."""

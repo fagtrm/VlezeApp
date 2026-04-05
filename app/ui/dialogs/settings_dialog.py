@@ -2,7 +2,6 @@
 SettingsDialog — диалог настроек приложения.
 
 Поля:
-    - Выбор папки vless
     - remember_last_server
     - autostart_xray
     - close_to_tray
@@ -13,8 +12,6 @@ SettingsDialog — диалог настроек приложения.
     get_close_to_tray()        -> bool
 """
 from __future__ import annotations
-
-from pathlib import Path
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -35,19 +32,6 @@ class SettingsDialog(Adw.PreferencesDialog):
         # ── Группа: Основные ──────────────────────────────────────────────
         general_group: Adw.PreferencesGroup = Adw.PreferencesGroup()
         general_group.set_title(_("General"))
-
-        # Путь до папки vless
-        self.vless_row: Adw.ActionRow = Adw.ActionRow()
-        self.vless_row.set_title(_("VLESS configs folder"))
-        self.vless_row.set_subtitle(str(app_config.vless_dir))
-
-        # Кнопка выбора папки
-        self.folder_btn: Gtk.Button = Gtk.Button.new_from_icon_name("document-open-symbolic")
-        self.folder_btn.set_tooltip_text(_("Select folder"))
-        self.folder_btn.connect("clicked", self._on_select_folder)
-        self.vless_row.add_suffix(self.folder_btn)
-
-        general_group.add(self.vless_row)
 
         # Чекбокс: запоминать последний сервер
         self.remember_row: Adw.SwitchRow = Adw.SwitchRow()
@@ -73,27 +57,6 @@ class SettingsDialog(Adw.PreferencesDialog):
         page: Adw.PreferencesPage = Adw.PreferencesPage()
         page.add(general_group)
         self.add(page)
-
-    # ── Обработчики ───────────────────────────────────────────────────────
-
-    def _on_select_folder(self, btn: Gtk.Button) -> None:
-        """Выбор папки с конфигами."""
-        dialog: Gtk.FileDialog = Gtk.FileDialog()
-        dialog.set_title(_("Select VLESS configs folder"))
-        parent = self.get_native()
-        if parent:
-            dialog.open(parent, None, self._on_folder_selected)
-
-    def _on_folder_selected(self, dialog: Gtk.FileDialog, result) -> None:
-        """Обработка выбранной папки."""
-        try:
-            file = dialog.open_finish(result)
-            if file:
-                path: Path = Path(file.get_path())
-                self.app_config.set_vless_dir(path)
-                self.vless_row.set_subtitle(str(path))
-        except Exception as e:
-            print(f"Error: {e}")
 
     # ── Публичный API ─────────────────────────────────────────────────────
 

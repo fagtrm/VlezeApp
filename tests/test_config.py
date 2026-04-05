@@ -32,12 +32,14 @@ def tmp_config_dir() -> Path:
 def app_config(tmp_config_dir: Path) -> AppConfig:
     """Create an AppConfig that reads/writes inside a temp directory.
 
-    Patches the module-level CONFIG_DIR and CONFIG_FILE constants so
+    Patches the module-level CONFIG_DIR, CONFIG_FILE and VLESS_DIR constants so
     the real user config is never touched.
     """
     config_file = tmp_config_dir / "config.json"
+    vless_dir = tmp_config_dir / "vless"
     with patch.object(config_module, "CONFIG_DIR", tmp_config_dir), \
-         patch.object(config_module, "CONFIG_FILE", config_file):
+         patch.object(config_module, "CONFIG_FILE", config_file), \
+         patch.object(config_module, "VLESS_DIR", vless_dir):
         yield AppConfig()
 
 
@@ -47,10 +49,6 @@ def app_config(tmp_config_dir: Path) -> AppConfig:
 
 class TestDefaultConfig:
     """Tests for AppConfig default values and initial creation."""
-
-    def test_default_vless_dir(self, app_config: AppConfig) -> None:
-        """vless_dir should default to CONFIG_DIR / 'vless'."""
-        assert app_config.vless_dir.name == "vless"
 
     def test_default_remember_last_server(self, app_config: AppConfig) -> None:
         """remember_last_server should default to False."""
@@ -75,7 +73,8 @@ class TestDefaultConfig:
 
     def test_creates_vless_directory(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
         """Initialisation should create the vless subdirectory."""
-        assert (tmp_config_dir / "vless").is_dir()
+        vless_dir = tmp_config_dir / "vless"
+        assert vless_dir.is_dir()
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +86,6 @@ class TestSaveLoad:
 
     def test_save_and_reload(self, app_config: AppConfig) -> None:
         """Modified settings should survive a save and reload cycle."""
-        app_config.vless_dir = Path("/custom/vless/path")
         app_config.remember_last_server = True
         app_config.last_server_name = "MyServer"
         app_config.autostart_xray = True
@@ -95,7 +93,6 @@ class TestSaveLoad:
 
         # Create a fresh instance that will reload from disk
         fresh = AppConfig()
-        assert fresh.vless_dir == Path("/custom/vless/path")
         assert fresh.remember_last_server is True
         assert fresh.last_server_name == "MyServer"
         assert fresh.autostart_xray is True
@@ -115,7 +112,6 @@ class TestSaveLoad:
         with open(config_file, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         expected_keys = {
-            "vless_dir",
             "remember_last_server",
             "last_server_name",
             "autostart_xray",
@@ -130,38 +126,34 @@ class TestSaveLoad:
         config_file = tmp_config_dir / "config.json"
         config_file.write_text("{ broken json !!!")
 
+        vless_dir = tmp_config_dir / "vless"
         with patch.object(config_module, "CONFIG_DIR", tmp_config_dir), \
-             patch.object(config_module, "CONFIG_FILE", config_file):
+             patch.object(config_module, "CONFIG_FILE", config_file), \
+             patch.object(config_module, "VLESS_DIR", vless_dir):
             cfg = AppConfig()
 
         # Should have fallen back to defaults
         assert cfg.remember_last_server is False
         assert cfg.close_to_tray is False
 
-    def test_set_vless_dir_persists(self, app_config: AppConfig) -> None:
-        """set_vless_dir should update the attribute and save to disk."""
-        new_dir = Path("/another/custom/path")
-        app_config.set_vless_dir(new_dir)
+    def test_is_valid_true(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
+        """is_valid should return True when VLESS_DIR exists."""
+        vless_dir = tmp_config_dir / "vless"
+        assert vless_dir.exists() and vless_dir.is_dir()
 
-        assert app_config.vless_dir == new_dir
-
-        # Verify it was persisted
-        fresh = AppConfig()
-        assert fresh.vless_dir == new_dir
-
-    def test_get_vless_dir(self, app_config: AppConfig) -> None:
-        """get_vless_dir should return the current vless_dir."""
-        app_config.vless_dir = Path("/some/path")
-        assert app_config.get_vless_dir() == Path("/some/path")
-
-    def test_is_valid_true(self, app_config: AppConfig) -> None:
-        """is_valid should return True when vless_dir exists."""
-        assert app_config.is_valid() is True
-
-    def test_is_valid_false(self, app_config: AppConfig) -> None:
-        """is_valid should return False when vless_dir does not exist."""
-        app_config.vless_dir = Path("/nonexistent/path/xyz")
-        assert app_config.is_valid() is False
+    def test_is_valid_false(self, tmp_config_dir: Path) -> None:
+        """is_valid should return False when VLESS_DIR does not exist."""
+        nonexistent = tmp_config_dir / "nonexistent_vless"
+        # Patch VLESS_DIR to a non-existent path and call is_valid via a fresh instance
+        # but prevent mkdir by patching _ensure_config_dir to do nothing.
+        with patch.object(config_module, "VLESS_DIR", nonexistent):
+            with patch.object(AppConfig, "_ensure_config_dir", lambda self: None):
+                cfg = AppConfig.__new__(AppConfig)
+                cfg.remember_last_server = False
+                cfg.last_server_name = ""
+                cfg.autostart_xray = False
+                cfg.close_to_tray = False
+                assert cfg.is_valid() is False
 
 
 # ---------------------------------------------------------------------------

@@ -29,11 +29,8 @@ msgid "Logs"
 msgstr "Logs"
 
 # === Dashboard ===
-msgid "Control Panel"
-msgstr "Control Panel"
-
-msgid "VPN Status"
-msgstr "VPN Status"
+msgid "Status"
+msgstr "Status"
 
 msgid "State"
 msgstr "State"
@@ -50,25 +47,34 @@ msgstr "Active config"
 msgid "Not selected"
 msgstr "Not selected"
 
-msgid "Delay (ping)"
-msgstr "Delay (ping)"
+msgid "Latency (ping)"
+msgstr "Latency (ping)"
 
 msgid "Check ping"
 msgstr "Check ping"
+
+msgid "Check latency via VPN"
+msgstr "Check latency via VPN"
 
 msgid "Checking..."
 msgstr "Checking..."
 
 # === Configurations ===
-msgid "Paste base64 config download link..."
-msgstr "Paste base64 config download link..."
+msgid "Paste a URL to download a base64 config..."
+msgstr "Paste a URL to download a base64 config..."
 
-msgid "No configs found. Load a base64 file to create a config."
-msgstr "No configs found. Load a base64 file to create a config."
+msgid "Download from the internet"
+msgstr "Download from the internet"
+
+msgid "Select a file from computer"
+msgstr "Select a file from computer"
+
+msgid "No configs found. Download a base64 file to create a config."
+msgstr "No configs found. Download a base64 file to create a config."
 
 # === Logs ===
-msgid "Xray Logs"
-msgstr "Xray Logs"
+msgid "Xray logs"
+msgstr "Xray logs"
 
 msgid "Clear logs"
 msgstr "Clear logs"
@@ -93,66 +99,72 @@ msgstr "Settings"
 msgid "General"
 msgstr "General"
 
-msgid "VLESS configs folder"
-msgstr "VLESS configs folder"
-
-msgid "Select folder"
-msgstr "Select folder"
-
-msgid "Select VLESS configs folder"
-msgstr "Select VLESS configs folder"
-
 msgid "Remember last selected server"
 msgstr "Remember last selected server"
 
-msgid "Start xray immediately after application launch"
-msgstr "Start xray immediately after application launch"
+msgid "Launch xray immediately after app start"
+msgstr "Launch xray immediately after app start"
 
 msgid "If a server is selected"
 msgstr "If a server is selected"
 
-msgid "Close to system tray"
-msgstr "Close to system tray"
+msgid "Close minimizes to tray"
+msgstr "Close minimizes to tray"
 
-msgid "Hide to tray when close button is pressed"
-msgstr "Hide to tray when close button is pressed"
+msgid "When closing the window, it hides to the system tray"
+msgstr "When closing the window, it hides to the system tray"
 
 # === Dialogs ===
-msgid "Vless folder not found"
-msgstr "Vless folder not found"
+msgid "VLESS configs folder not found"
+msgstr "VLESS configs folder not found"
 
-msgid "Vless folder {path} does not exist. Create it or change path in config: {config}"
-msgstr "Vless folder {path} does not exist. Create it or change path in config: {config}"
+msgid "The folder {} does not exist. Create it."
+msgstr "The folder {} does not exist. Create it."
 
-msgid "Got it"
-msgstr "Got it"
+msgid "Understood"
+msgstr "Understood"
 
 msgid "Error"
 msgstr "Error"
 
-msgid "OK"
-msgstr "OK"
+msgid "Сначала запустите VPN подключение"
+msgstr "First start VPN connection"
 
-msgid "Enter URL to download"
+msgid "Введите URL для загрузки"
 msgstr "Enter URL to download"
 
-msgid "Could not download file. Check the URL."
+msgid "Не удалось загрузить файл. Проверьте URL."
 msgstr "Could not download file. Check the URL."
 
-msgid "Select file with base64 links"
+msgid "Выберите файл с base64 ссылками"
 msgstr "Select file with base64 links"
 
 msgid "Text files"
 msgstr "Text files"
 
-msgid "File read error: {error}"
+msgid "Ошибка чтения файла: {}"
 msgstr "File read error: {error}"
 
-msgid "No vless:// links found in file"
+msgid "Не найдено vless:// ссылок в файле"
 msgstr "No vless:// links found in file"
 
-msgid "Vless folder not configured. Check app config."
+msgid "Папка vless не настроена. Проверьте конфиг приложения."
 msgstr "Vless folder not configured. Check app config."
+
+msgid "Конфиг создан: {}"
+msgstr "Config created: {}"
+
+msgid "Конфиг сохранён: {}"
+msgstr "Config saved: {}"
+
+msgid "Не удалось запустить xray: {}\n\nПроверьте логи на странице 'Логи'."
+msgstr "Failed to start xray: {}\n\nCheck logs on the 'Logs' page."
+
+msgid "Ошибка: {}"
+msgstr "Error: {}"
+
+msgid "Unknown"
+msgstr "Unknown"
 
 # === Tray ===
 msgid "Hide VlezeApp"
@@ -164,36 +176,60 @@ msgstr "Show VlezeApp"
 msgid "Quit"
 msgstr "Quit"
 
-# === Status messages ===
-msgid "xray started with PID {pid}"
+# === xray_manager ===
+msgid "xray запущен"
+msgstr "xray started"
+
+msgid "xray запущен с PID {pid}"
 msgstr "xray started with PID {pid}"
 
-msgid "xray stopped"
+msgid "xray остановлен"
 msgstr "xray stopped"
 
-msgid "xray exited with code {code}"
+msgid "xray завершился с кодом {code}"
 msgstr "xray exited with code {code}"
 
-msgid "xray not found at /usr/bin/xray"
+msgid "xray не найден в /usr/bin/xray"
 msgstr "xray not found at /usr/bin/xray"
 
-msgid "Error starting xray: {error}"
+msgid "Ошибка запуска xray: {}"
 msgstr "Error starting xray: {error}"
 
-msgid "Could not start xray: {message}"
-msgstr "Could not start xray: {message}"
+# === Ping ===
+msgid "Пинг уже выполняется"
+msgstr "Ping is already in progress"
 
-msgid "First start VPN connection"
-msgstr "First start VPN connection"
-
-msgid "ms"
+msgid "мс"
 msgstr "ms"
 
-msgid "Timeout (>10 s)"
+msgid "Таймаут (>10 с)"
 msgstr "Timeout (>10 s)"
 
-msgid "curl not found"
+msgid "curl не найден"
 msgstr "curl not found"
 
-msgid "Error: {error}"
-msgstr "Error: {error}"
+msgid "Ошибка"
+msgstr "Error"
+
+msgid "неизвестная ошибка"
+msgstr "unknown error"
+
+# === Parser ===
+msgid "Ошибка декодирования base64: {}"
+msgstr "Base64 decode error: {}"
+
+msgid "Ошибка парсинга ссылки: {}"
+msgstr "Link parsing error: {}"
+
+# === File downloader ===
+msgid "Ошибка загрузки файла: %s"
+msgstr "File download error: %s"
+
+msgid "Неизвестная ошибка при загрузке: %s"
+msgstr "Unknown download error: %s"
+
+msgid "Файл не найден: %s"
+msgstr "File not found: %s"
+
+msgid "Нет прав на чтение файла: %s"
+msgstr "No permission to read file: %s"
