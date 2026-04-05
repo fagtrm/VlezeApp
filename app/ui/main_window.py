@@ -26,6 +26,7 @@ from app.core.ping_checker import PingChecker
 from app.core.config_store import ConfigStore
 from app.core.vless_parser import VLESSParser
 from app.ui.pages import DashboardPage, ConfigsPage, LogPage
+from app.ui.pages.configs_page import MAX_CONFIGS
 from app.ui.widgets import ConfigRow, BottomBar
 from app.ui.dialogs import SettingsDialog
 from app.services import TrayService, FileDownloader
@@ -196,7 +197,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.bottom_bar.toggle_btn.connect("clicked", self._on_toggle)
         self.configs_page.download_btn.connect("clicked", self._on_download)
         self.configs_page.file_btn.connect("clicked", self._on_file_select)
-        self.configs_page.config_list.connect("row-selected", self._on_config_selected)
+        self.configs_page.connect("config-deleted", self._on_config_deleted)
         self.log_page.clear_btn.connect("clicked", self._on_clear_logs)
         self.dashboard_page.ping_btn.connect("clicked", self._on_ping)
 
@@ -211,6 +212,8 @@ class MainWindow(Adw.ApplicationWindow):
         elif row == self.config_nav_row:
             self.page_stack.set_visible_child_name("configs")
             self._refresh_configs()
+            # Переподключаем обработчик выбора (табы пересоздаются)
+            self.configs_page.connect_selection_handler(self._on_config_selected)
         elif row == self.log_nav_row:
             self.page_stack.set_visible_child_name("logs")
 
@@ -251,6 +254,60 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             self.selected_entry = None
             self.bottom_bar.set_config_selected(False)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Удаление конфига
+    # ──────────────────────────────────────────────────────────────────────
+
+    def _on_config_deleted(self, configs_page: ConfigsPage, config_name: str) -> None:
+        """Обработка удаления конфигурации."""
+        # Диалог подтверждения
+        dialog = Adw.AlertDialog()
+        display_name = configs_page._format_tab_name(config_name)
+        dialog.set_heading(_("Удалить конфигурацию?"))
+        dialog.set_body(
+            _("Вы уверены, что хотите удалить «{}»?").format(display_name)
+        )
+        dialog.add_response("cancel", _("Отмена"))
+        dialog.add_response("delete", _("Удалить"))
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.choose(
+            self,
+            None,
+            lambda _dialog, result, cn=config_name: self._on_delete_choose_finish(_dialog, result, cn),
+        )
+
+    def _on_delete_choose_finish(self, dialog: Adw.AlertDialog, result: Gio.AsyncResult, config_name: str) -> None:
+        """Получить ответ из диалога и подтвердить удаление."""
+        try:
+            response: str = dialog.choose_finish(result)
+        except Exception:
+            return
+        self._on_delete_confirm(response, config_name)
+
+    def _on_delete_confirm(self, response: str, config_name: str) -> None:
+        """Подтверждение удаления."""
+        if response != "delete" or not self.config_store:
+            return
+
+        self.config_store.delete_config(config_name)
+        self._refresh_configs()
+        self.configs_page.connect_selection_handler(self._on_config_selected)
+
+        # Если удалили выбранный сервер — сбрасываем
+        if self.selected_entry:
+            # Проверяем, есть ли ещё этот entry в оставшихся конфигах
+            found = False
+            for cfg in self.config_store.get_configs():
+                for entry in cfg["data"].get("entries", []):
+                    if entry is self.selected_entry:
+                        found = True
+                        break
+                if found:
+                    break
+            if not found:
+                self.selected_entry = None
+                self.bottom_bar.set_config_selected(False)
 
     # ──────────────────────────────────────────────────────────────────────
     # Старт / Стоп
@@ -398,31 +455,47 @@ class MainWindow(Adw.ApplicationWindow):
             parsed: dict[str, Any] = VLESSParser.parse_vless_link(link)
             entries.append(parsed)
 
+        # Проверяем лимит (по файлам на диске)
+        if self.config_store and len(self.config_store.get_configs()) >= MAX_CONFIGS:
+            self._show_error(
+                _("Достигнут лимит конфигураций ({}). Удалите старую.").format(
+                    MAX_CONFIGS
+                )
+            )
+            return
+
+        # Определяем следующий номер конфига на основе файлов на диске
+        if self.config_store:
+            existing = [cfg["name"] for cfg in self.config_store.get_configs()]
+        else:
+            existing = []
+        next_num = 1
+        while f"config_{next_num}" in existing:
+            next_num += 1
+
         # Сохраняем в конфиг
         if self.config_store:
-            config_name: str = f"config_{len(self.config_store.get_configs()) + 1}"
+            config_name: str = f"config_{next_num}"
             config_path: Path = self.config_store.add_entries(entries, config_name)
             print(_("Конфиг сохранён: {}").format(config_path))
 
             # Обновляем список
             self._refresh_configs()
+            self.configs_page.connect_selection_handler(self._on_config_selected)
         else:
             self._show_error(_("Папка vless не настроена. Проверьте конфиг приложения."))
 
     def _refresh_configs(self) -> None:
-        """Обновляет список конфигов."""
+        """Обновляет табы конфигов."""
         if not self.config_store:
             return
 
         # Перезагружаем
         self.config_store.set_vless_dir(VLESS_DIR)
 
-        # Собираем все entries из всех конфигов
-        all_entries: list[dict[str, Any]] = []
-        for cfg in self.config_store.get_configs():
-            all_entries.extend(cfg["data"].get("entries", []))
-
-        self.configs_page.populate_configs(all_entries)
+        # Строим табы из конфигов
+        configs = self.config_store.get_configs()
+        self.configs_page.build_tabs(configs)
 
     # ──────────────────────────────────────────────────────────────────────
     # Настройки

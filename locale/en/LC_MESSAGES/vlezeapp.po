@@ -233,3 +233,25 @@ msgstr "File not found: %s"
 
 msgid "Нет прав на чтение файла: %s"
 msgstr "No permission to read file: %s"
+
+# === Config tabs ===
+msgid "Delete configuration"
+msgstr "Delete configuration"
+
+msgid "Configuration {}"
+msgstr "Configuration {}"
+
+msgid "Delete configuration?"
+msgstr "Delete configuration?"
+
+msgid "Вы уверены, что хотите удалить «{}»?"
+msgstr "Are you sure you want to delete \"{}\"?"
+
+msgid "Отмена"
+msgstr "Cancel"
+
+msgid "Удалить"
+msgstr "Delete"
+
+msgid "Достигнут лимит конфигураций ({}). Удалите старую."
+msgstr "Configuration limit reached ({}). Delete an old one first."

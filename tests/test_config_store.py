@@ -210,3 +210,45 @@ class TestSetVlessDir:
         store.set_vless_dir(fake_dir)
         assert store.get_configs() == []
         assert store.vless_dir == fake_dir
+
+
+# ---------------------------------------------------------------------------
+# test_delete_config
+# ---------------------------------------------------------------------------
+
+class TestDeleteConfig:
+    """Tests for ConfigStore.delete_config()."""
+
+    def test_delete_existing_config(self, store: ConfigStore) -> None:
+        """Deleting an existing config should remove the file and update configs."""
+        store.add_entries([_sample_entry(num=1)], "alpha")
+        assert len(store.get_configs()) == 1
+
+        result = store.delete_config("alpha")
+        assert result is True
+        assert store.get_configs() == []
+
+    def test_delete_nonexistent_returns_false(self, store: ConfigStore) -> None:
+        """Deleting a non-existent config should return False."""
+        result = store.delete_config("does_not_exist")
+        assert result is False
+
+    def test_delete_removes_file_from_disk(self, store: ConfigStore, tmp_vless_dir: Path) -> None:
+        """The JSON file should be physically removed."""
+        store.add_entries([_sample_entry(num=1)], "beta")
+        config_file = tmp_vless_dir / "beta.json"
+        assert config_file.exists()
+
+        store.delete_config("beta")
+        assert not config_file.exists()
+
+    def test_delete_one_leaves_others(self, store: ConfigStore) -> None:
+        """Deleting one config should leave others intact."""
+        store.add_entries([_sample_entry(num=1)], "first")
+        store.add_entries([_sample_entry(num=1)], "second")
+        assert len(store.get_configs()) == 2
+
+        store.delete_config("first")
+        configs = store.get_configs()
+        assert len(configs) == 1
+        assert configs[0]["name"] == "second"

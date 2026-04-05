@@ -111,3 +111,19 @@ class ConfigStore:
         """
         self.vless_dir = path
         self._load_configs()
+
+    def delete_config(self, config_name: str) -> bool:
+        """Delete a configuration file by name.
+
+        Args:
+            config_name: Name of the config (without .json extension).
+
+        Returns:
+            True if the file was deleted, False if it did not exist.
+        """
+        config_path = self.vless_dir / f"{config_name}.json"
+        if config_path.exists():
+            config_path.unlink()
+            self._load_configs()
+            return True
+        return False

@@ -1,20 +1,22 @@
 """
-ConfigsPage — страница списка VLESS-конфигураций.
+ConfigsPage — страница списка VLESS-конфигураций с табами.
 
-Кнопки загрузки URL и выбора файла, список конфигов с подсветкой
-подключённого сервера.
+Кнопки загрузки URL и выбора файла, табы конфигураций (до 5),
+каждый таб содержит список серверов с подсветкой подключённого.
 
 Методы:
-    populate_configs(entries)  — заполнить список записями.
+    build_tabs(configs)        — построить табы из списка конфигов.
     get_selected_entry()       — вернуть выбранную запись.
     highlight_connected(entry) — подсветить подключённый сервер.
+    get_active_tab_name()      — имя активного таба (config_1 и т.д.).
 """
 from __future__ import annotations
 
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
-from gi.repository import Gtk, Gdk
+gi.require_version("Gio", "2.0")
+from gi.repository import Gtk, Gdk, Gio, GObject
 
 from app.i18n import _
 from app.ui.widgets.config_row import ConfigRow
@@ -29,9 +31,15 @@ _CONNECTED_CSS = """
     }
 """
 
+MAX_CONFIGS = 5
+
 
 class ConfigsPage(Gtk.Box):
-    """Страница списка конфигов."""
+    """Страница списка конфигов с табами."""
+
+    __gsignals__ = {
+        "config-deleted": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+    }
 
     def __init__(self) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -68,54 +76,196 @@ class ConfigsPage(Gtk.Box):
 
         self.append(load_box)
 
-        # ── Список конфигов ───────────────────────────────────────────────
-        self.config_list: Gtk.ListBox = Gtk.ListBox()
-        self.config_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.config_list.add_css_class("boxed-list")
+        # ── Табы (Notebook) ───────────────────────────────────────────────
+        self.notebook: Gtk.Notebook = Gtk.Notebook()
+        self.notebook.set_scrollable(True)
+        self.notebook.set_show_border(False)
+        self.notebook.set_vexpand(True)
+        self.notebook.set_hexpand(True)
+        self.notebook.show()
+        self.append(self.notebook)
 
-        scrolled: Gtk.ScrolledWindow = Gtk.ScrolledWindow()
-        scrolled.set_vexpand(True)
-        scrolled.set_child(self.config_list)
-        self.append(scrolled)
-
-        # Пустое состояние
+        # Пустое состояние (скрыто по умолчанию)
         self.empty_label: Gtk.Label = Gtk.Label(
             label=_("No configs found. Download a base64 file to create a config.")
         )
         self.empty_label.set_opacity(0.5)
         self.empty_label.set_margin_top(40)
+        self.empty_label.set_visible(False)
         self.append(self.empty_label)
+
+    # ── Внутренние обработчики ────────────────────────────────────────────
+
+    def _get_listbox_for_page(self, page: Gtk.Widget) -> Gtk.ListBox | None:
+        """Найти ListBox внутри страницы таба."""
+        if isinstance(page, Gtk.ScrolledWindow):
+            child = page.get_child()
+            if isinstance(child, Gtk.ListBox):
+                return child
+            # GTK4 может добавить Gtk.Viewport между ScrolledWindow и ListBox
+            if isinstance(child, Gtk.Viewport):
+                inner = child.get_child()
+                if isinstance(inner, Gtk.ListBox):
+                    return inner
+        return None
+
+    def _create_tab_label(self, display_name: str, config_name: str) -> Gtk.Box:
+        """Создать заголовок таба с кнопкой удаления."""
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+
+        label = Gtk.Label(label=display_name)
+        label.set_margin_start(4)
+        label.set_margin_end(4)
+        box.append(label)
+
+        # Кнопка удаления
+        del_btn = Gtk.Button.new_from_icon_name("window-close-symbolic")
+        del_btn.set_tooltip_text(_("Delete configuration"))
+        del_btn.set_has_frame(False)
+        del_btn.add_css_class("flat")
+        del_btn.set_valign(Gtk.Align.CENTER)
+        # Сохраняем имя конфига как Python-атрибут
+        del_btn._config_name = config_name  # noqa: SLF001
+        del_btn.connect("clicked", self._on_delete_tab)
+        box.append(del_btn)
+
+        return box
+
+    def _on_delete_tab(self, btn: Gtk.Button) -> None:
+        """Удалить конфигурацию по нажатию кнопки."""
+        config_name: str | None = getattr(btn, "_config_name", None)
+        if config_name:
+            self.emit("config-deleted", config_name)
 
     # ── Публичный API ─────────────────────────────────────────────────────
 
-    def populate_configs(self, entries: list[dict]) -> None:
-        """Заполняет список конфигов."""
-        # Очищаем
-        while child := self.config_list.get_row_at_index(0):
-            self.config_list.remove(child)
+    def build_tabs(self, configs: list[dict]) -> None:
+        """Построить табы из списка конфигов.
 
-        if not entries:
+        Args:
+            configs: Список конфигов из ConfigStore.
+        """
+        # Очищаем все табы
+        while self.notebook.get_n_pages() > 0:
+            self.notebook.remove_page(0)
+
+        if not configs:
             self.empty_label.set_visible(True)
+            self.notebook.set_visible(False)
             return
 
         self.empty_label.set_visible(False)
+        self.notebook.set_visible(True)
 
-        for entry in entries:
-            row: ConfigRow = ConfigRow(entry)
-            self.config_list.append(row)
+        for cfg in configs:
+            entries = cfg["data"].get("entries", [])
+            config_name = cfg["name"]  # например "config_1"
+            display_name = self._format_tab_name(config_name)
+
+            # Создаём ListBox для этого таба
+            listbox = Gtk.ListBox()
+            listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+            listbox.add_css_class("boxed-list")
+            listbox._config_name = config_name  # noqa: SLF001
+
+            for entry in entries:
+                row = ConfigRow(entry)
+                listbox.append(row)
+
+            # Оборачиваем в ScrolledWindow
+            scrolled = Gtk.ScrolledWindow()
+            scrolled.set_child(listbox)
+            scrolled.set_vexpand(True)
+
+            # Заголовок таба
+            tab_label = self._create_tab_label(display_name, config_name)
+
+            # Показываем всё до добавления в notebook
+            scrolled.show()
+            listbox.show()
+            tab_label.show()
+
+            self.notebook.append_page(scrolled, tab_label)
+
+        # Переключаемся на первый таб (если есть страницы)
+        if self.notebook.get_n_pages() > 0:
+            self.notebook.set_current_page(0)
+        self.notebook.show()
+        self.notebook.queue_draw()
+
+    def _format_tab_name(self, config_name: str) -> str:
+        """Преобразовать 'config_1' → 'Конфигурация 1'."""
+        parts = config_name.rsplit("_", 1)
+        if len(parts) == 2 and parts[1].isdigit():
+            return _("Configuration {}").format(parts[1])
+        return config_name
 
     def get_selected_entry(self) -> dict | None:
-        """Возвращает выбранную запись."""
-        selected = self.config_list.get_selected_row()
-        if selected and hasattr(selected, "entry"):
-            return selected.entry
+        """Возвращает выбранную запись из активного таба."""
+        current_page = self.notebook.get_current_page()
+        if current_page < 0:
+            return None
+
+        page = self.notebook.get_nth_page(current_page)
+        listbox = self._get_listbox_for_page(page)
+        if listbox:
+            selected = listbox.get_selected_row()
+            if selected and hasattr(selected, "entry"):
+                return selected.entry
+        return None
+
+    def get_active_tab_name(self) -> str | None:
+        """Возвращает имя активного конфига (config_1 и т.д.)."""
+        current_page = self.notebook.get_current_page()
+        if current_page < 0:
+            return None
+
+        page = self.notebook.get_nth_page(current_page)
+        listbox = self._get_listbox_for_page(page)
+        if listbox:
+            return getattr(listbox, "_config_name", None)
         return None
 
     def highlight_connected(self, entry: dict | None) -> None:
-        """Подсвечивает подключённую строку зелёным фоном."""
-        row = self.config_list.get_row_at_index(0)
-        while row:
-            if hasattr(row, "entry"):
-                row.set_connected(row.entry is entry)
-            next_idx = row.get_index() + 1
-            row = self.config_list.get_row_at_index(next_idx)
+        """Подсвечивает подключённую строку зелёным фоном во всех табах."""
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            listbox = self._get_listbox_for_page(page)
+            if listbox:
+                row = listbox.get_row_at_index(0)
+                while row:
+                    if hasattr(row, "set_connected"):
+                        row.set_connected(getattr(row, "entry", None) is entry)
+                    next_idx = row.get_index() + 1
+                    row = listbox.get_row_at_index(next_idx)
+
+    def can_add_config(self) -> bool:
+        """Можно ли добавить ещё один конфиг (лимит MAX_CONFIGS).
+
+        Проверяет по текущему количеству страниц в notebook.
+        """
+        return self.notebook.get_n_pages() < MAX_CONFIGS
+
+    def get_config_count(self) -> int:
+        """Вернуть текущее количество конфигов (страниц)."""
+        return self.notebook.get_n_pages()
+
+    def get_config_names(self) -> list[str]:
+        """Вернуть список имён конфигов в табах."""
+        names: list[str] = []
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            listbox = self._get_listbox_for_page(page)
+            if listbox:
+                name = getattr(listbox, "_config_name", None)
+                if name:
+                    names.append(name)
+        return names
+
+    def connect_selection_handler(self, callback) -> None:
+        """Подключить callback к row-selected во всех табах."""
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            listbox = self._get_listbox_for_page(page)
+            if listbox:
+                listbox.connect("row-selected", callback)
