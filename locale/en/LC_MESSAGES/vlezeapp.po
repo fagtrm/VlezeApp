@@ -1,0 +1,199 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: VlezeApp 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-05 19:00+0300\n"
+"PO-Revision-Date: 2026-04-05 19:00+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# === Application ===
+msgid "VlezeApp"
+msgstr "VlezeApp"
+
+msgid "VLESS VPN Manager"
+msgstr "VLESS VPN Manager"
+
+# === Navigation ===
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Configurations"
+msgstr "Configurations"
+
+msgid "Logs"
+msgstr "Logs"
+
+# === Dashboard ===
+msgid "Control Panel"
+msgstr "Control Panel"
+
+msgid "VPN Status"
+msgstr "VPN Status"
+
+msgid "State"
+msgstr "State"
+
+msgid "Not connected"
+msgstr "Not connected"
+
+msgid "Connected"
+msgstr "Connected"
+
+msgid "Active config"
+msgstr "Active config"
+
+msgid "Not selected"
+msgstr "Not selected"
+
+msgid "Delay (ping)"
+msgstr "Delay (ping)"
+
+msgid "Check ping"
+msgstr "Check ping"
+
+msgid "Checking..."
+msgstr "Checking..."
+
+# === Configurations ===
+msgid "Paste base64 config download link..."
+msgstr "Paste base64 config download link..."
+
+msgid "No configs found. Load a base64 file to create a config."
+msgstr "No configs found. Load a base64 file to create a config."
+
+# === Logs ===
+msgid "Xray Logs"
+msgstr "Xray Logs"
+
+msgid "Clear logs"
+msgstr "Clear logs"
+
+msgid "Logs will appear after starting xray..."
+msgstr "Logs will appear after starting xray..."
+
+msgid "Logs are empty..."
+msgstr "Logs are empty..."
+
+# === Bottom Bar ===
+msgid "▶ Start"
+msgstr "▶ Start"
+
+msgid "⏹ Stop"
+msgstr "⏹ Stop"
+
+# === Settings ===
+msgid "Settings"
+msgstr "Settings"
+
+msgid "General"
+msgstr "General"
+
+msgid "VLESS configs folder"
+msgstr "VLESS configs folder"
+
+msgid "Select folder"
+msgstr "Select folder"
+
+msgid "Select VLESS configs folder"
+msgstr "Select VLESS configs folder"
+
+msgid "Remember last selected server"
+msgstr "Remember last selected server"
+
+msgid "Start xray immediately after application launch"
+msgstr "Start xray immediately after application launch"
+
+msgid "If a server is selected"
+msgstr "If a server is selected"
+
+msgid "Close to system tray"
+msgstr "Close to system tray"
+
+msgid "Hide to tray when close button is pressed"
+msgstr "Hide to tray when close button is pressed"
+
+# === Dialogs ===
+msgid "Vless folder not found"
+msgstr "Vless folder not found"
+
+msgid "Vless folder {path} does not exist. Create it or change path in config: {config}"
+msgstr "Vless folder {path} does not exist. Create it or change path in config: {config}"
+
+msgid "Got it"
+msgstr "Got it"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Enter URL to download"
+msgstr "Enter URL to download"
+
+msgid "Could not download file. Check the URL."
+msgstr "Could not download file. Check the URL."
+
+msgid "Select file with base64 links"
+msgstr "Select file with base64 links"
+
+msgid "Text files"
+msgstr "Text files"
+
+msgid "File read error: {error}"
+msgstr "File read error: {error}"
+
+msgid "No vless:// links found in file"
+msgstr "No vless:// links found in file"
+
+msgid "Vless folder not configured. Check app config."
+msgstr "Vless folder not configured. Check app config."
+
+# === Tray ===
+msgid "Hide VlezeApp"
+msgstr "Hide VlezeApp"
+
+msgid "Show VlezeApp"
+msgstr "Show VlezeApp"
+
+msgid "Quit"
+msgstr "Quit"
+
+# === Status messages ===
+msgid "xray started with PID {pid}"
+msgstr "xray started with PID {pid}"
+
+msgid "xray stopped"
+msgstr "xray stopped"
+
+msgid "xray exited with code {code}"
+msgstr "xray exited with code {code}"
+
+msgid "xray not found at /usr/bin/xray"
+msgstr "xray not found at /usr/bin/xray"
+
+msgid "Error starting xray: {error}"
+msgstr "Error starting xray: {error}"
+
+msgid "Could not start xray: {message}"
+msgstr "Could not start xray: {message}"
+
+msgid "First start VPN connection"
+msgstr "First start VPN connection"
+
+msgid "ms"
+msgstr "ms"
+
+msgid "Timeout (>10 s)"
+msgstr "Timeout (>10 s)"
+
+msgid "curl not found"
+msgstr "curl not found"
+
+msgid "Error: {error}"
+msgstr "Error: {error}"

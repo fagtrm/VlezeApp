@@ -1,0 +1,200 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: VlezeApp 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-05 19:00+0300\n"
+"PO-Revision-Date: 2026-04-05 19:00+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+# === Приложение ===
+msgid "VlezeApp"
+msgstr "VlezeApp"
+
+msgid "VLESS VPN Manager"
+msgstr "Менеджер VLESS VPN"
+
+# === Навигация ===
+msgid "Dashboard"
+msgstr "Дашборд"
+
+msgid "Configurations"
+msgstr "Конфигурации"
+
+msgid "Logs"
+msgstr "Логи"
+
+# === Дашборд ===
+msgid "Control Panel"
+msgstr "Панель управления"
+
+msgid "VPN Status"
+msgstr "Статус VPN"
+
+msgid "State"
+msgstr "Состояние"
+
+msgid "Not connected"
+msgstr "Не подключен"
+
+msgid "Connected"
+msgstr "Подключен"
+
+msgid "Active config"
+msgstr "Активный конфиг"
+
+msgid "Not selected"
+msgstr "Не выбран"
+
+msgid "Delay (ping)"
+msgstr "Задержка (пинг)"
+
+msgid "Check ping"
+msgstr "Проверить пинг"
+
+msgid "Checking..."
+msgstr "Проверяю..."
+
+# === Конфигурации ===
+msgid "Paste base64 config download link..."
+msgstr "Вставьте ссылку для загрузки base64 конфига..."
+
+msgid "No configs found. Load a base64 file to create a config."
+msgstr "Конфиги не найдены. Загрузите base64 файл для создания конфига."
+
+# === Логи ===
+msgid "Xray Logs"
+msgstr "Логи xray"
+
+msgid "Clear logs"
+msgstr "Очистить логи"
+
+msgid "Logs will appear after starting xray..."
+msgstr "Логи появятся после запуска xray..."
+
+msgid "Logs are empty..."
+msgstr "Логи пусты..."
+
+# === Нижняя панель ===
+msgid "▶ Start"
+msgstr "▶ Старт"
+
+msgid "⏹ Stop"
+msgstr "⏹ Стоп"
+
+# === Настройки ===
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "General"
+msgstr "Основные"
+
+msgid "VLESS configs folder"
+msgstr "Папка с конфигами VLESS"
+
+msgid "Select folder"
+msgstr "Выбрать папку"
+
+msgid "Select VLESS configs folder"
+msgstr "Выберите папку с конфигами VLESS"
+
+msgid "Remember last selected server"
+msgstr "Запоминать последний выбранный сервер"
+
+msgid "Start xray immediately after application launch"
+msgstr "Запускать xray сразу после запуска приложения"
+
+msgid "If a server is selected"
+msgstr "Если выбран сервер"
+
+msgid "Close to system tray"
+msgstr "Закрытие сворачивает в трей"
+
+msgid "Hide to tray when close button is pressed"
+msgstr "При нажатии на кнопку закрытия окно скрывается в трей"
+
+# === Диалоги ===
+msgid "Vless folder not found"
+msgstr "Папка vless не найдена"
+
+msgid "Vless folder {path} does not exist. Create it or change path in config: {config}"
+msgstr "Папка {path} не существует. Создайте её или измените путь в конфиге: {config}"
+
+msgid "Got it"
+msgstr "Понятно"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Enter URL to download"
+msgstr "Введите URL для загрузки"
+
+msgid "Could not download file. Check the URL."
+msgstr "Не удалось загрузить файл. Проверьте URL."
+
+msgid "Select file with base64 links"
+msgstr "Выберите файл с base64 ссылками"
+
+msgid "Text files"
+msgstr "Текстовые файлы"
+
+msgid "File read error: {error}"
+msgstr "Ошибка чтения файла: {error}"
+
+msgid "No vless:// links found in file"
+msgstr "Не найдено vless:// ссылок в файле"
+
+msgid "Vless folder not configured. Check app config."
+msgstr "Папка vless не настроена. Проверьте конфиг приложения."
+
+# === Трей ===
+msgid "Hide VlezeApp"
+msgstr "Скрыть VlezeApp"
+
+msgid "Show VlezeApp"
+msgstr "Показать VlezeApp"
+
+msgid "Quit"
+msgstr "Выход"
+
+# === Статусы ===
+msgid "xray started with PID {pid}"
+msgstr "xray запущен с PID {pid}"
+
+msgid "xray stopped"
+msgstr "xray остановлен"
+
+msgid "xray exited with code {code}"
+msgstr "xray завершился с кодом {code}"
+
+msgid "xray not found at /usr/bin/xray"
+msgstr "xray не найден в /usr/bin/xray"
+
+msgid "Error starting xray: {error}"
+msgstr "Ошибка запуска xray: {error}"
+
+msgid "Could not start xray: {message}"
+msgstr "Не удалось запустить xray: {message}"
+
+msgid "First start VPN connection"
+msgstr "Сначала запустите VPN подключение"
+
+msgid "ms"
+msgstr "мс"
+
+msgid "Timeout (>10 s)"
+msgstr "Таймаут (>10 с)"
+
+msgid "curl not found"
+msgstr "curl не найден"
+
+msgid "Error: {error}"
+msgstr "Ошибка: {error}"

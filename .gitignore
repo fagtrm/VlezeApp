@@ -1,0 +1,30 @@
+__pycache__/
+*.pyc
+*.pyo
+*.mo
+data/temp/
+*.log
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.mo
+*.log
+
+# VlezeApp
+data/temp/
+*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (internal only)
+PROJECT.md
