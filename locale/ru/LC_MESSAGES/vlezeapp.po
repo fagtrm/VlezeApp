@@ -87,11 +87,11 @@ msgid "Logs are empty..."
 msgstr "Логи пусты..."
 
 # === Нижняя панель ===
-msgid "▶ Start"
-msgstr "▶ Старт"
+msgid "Start"
+msgstr "Старт"
 
-msgid "⏹ Stop"
-msgstr "⏹ Стоп"
+msgid "Stop"
+msgstr "Стоп"
 
 # === Настройки ===
 msgid "Settings"

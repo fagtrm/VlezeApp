@@ -86,11 +86,11 @@ msgid "Logs are empty..."
 msgstr "Logs are empty..."
 
 # === Bottom Bar ===
-msgid "▶ Start"
-msgstr "▶ Start"
+msgid "Start"
+msgstr "Start"
 
-msgid "⏹ Stop"
-msgstr "⏹ Stop"
+msgid "Stop"
+msgstr "Stop"
 
 # === Settings ===
 msgid "Settings"
