@@ -2,6 +2,7 @@
 Точка входа VlezeApp.
 """
 import sys
+from pathlib import Path
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -9,9 +10,14 @@ gi.require_version("Adw", "1")
 gi.require_version("GLib", "2.0")
 gi.require_version("Gio", "2.0")
 
-from gi.repository import Adw, Gio
+from gi.repository import Adw, Gio, Gtk, Gdk, GLib
 
 from app.ui.main_window import MainWindow
+
+# Загружаем GResource с иконками
+RESOURCES_FILE = Path(__file__).parent / "data" / "resources.gresource"
+resource = Gio.Resource.load(str(RESOURCES_FILE))
+Gio.resources_register(resource)
 
 
 class VlezeApp(Adw.Application):

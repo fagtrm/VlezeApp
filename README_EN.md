@@ -21,6 +21,7 @@ VlezeApp is a modern desktop GUI application for managing VLESS configurations a
 
 - 🔗 **VLESS Link Parsing** — full support for `vless://` format with all parameters (TLS, Reality, WebSocket, gRPC, HTTP header, flow)
 - ⚙️ **Xray Config Generation** — automatic JSON config creation for launching Xray
+- 📑 **Config Tabs** — up to 5 configurations with tab switching and individual deletion
 - 🚀 **Connection Management** — start, stop, and monitor Xray status in real-time
 - 📡 **Latency Check** — ping via SOCKS5 proxy to verify VPN connectivity
 - 📥 **Config Loading** — download base64 subscriptions from the internet or select local files

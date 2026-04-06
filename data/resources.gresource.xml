@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/vlezeapp/app/icons/hicolor">
+    <file alias="scalable/apps/com.vlezeapp.app.svg">data/icons/hicolor/scalable/apps/com.vlezeapp.app.png</file>
+    <file alias="256x256/apps/com.vlezeapp.app.png">data/icons/hicolor/256x256/apps/com.vlezeapp.app.png</file>
+    <file alias="128x128/apps/com.vlezeapp.app.png">data/icons/hicolor/128x128/apps/com.vlezeapp.app.png</file>
+    <file alias="64x64/apps/com.vlezeapp.app.png">data/icons/hicolor/64x64/apps/com.vlezeapp.app.png</file>
+    <file alias="48x48/apps/com.vlezeapp.app.png">data/icons/hicolor/48x48/apps/com.vlezeapp.app.png</file>
+    <file alias="32x32/apps/com.vlezeapp.app.png">data/icons/hicolor/32x32/apps/com.vlezeapp.app.png</file>
+    <file alias="16x16/apps/com.vlezeapp.app.png">data/icons/hicolor/16x16/apps/com.vlezeapp.app.png</file>
+  </gresource>
+</gresources>

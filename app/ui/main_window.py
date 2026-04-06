@@ -25,10 +25,9 @@ from app.core.xray_config import XrayConfigGenerator
 from app.core.ping_checker import PingChecker
 from app.core.config_store import ConfigStore
 from app.core.vless_parser import VLESSParser
-from app.ui.pages import DashboardPage, ConfigsPage, LogPage
+from app.ui.pages import DashboardPage, ConfigsPage, LogPage, SettingsPage
 from app.ui.pages.configs_page import MAX_CONFIGS
-from app.ui.widgets import ConfigRow, BottomBar
-from app.ui.dialogs import SettingsDialog
+from app.ui.widgets import ConfigRow
 from app.services import TrayService, FileDownloader
 
 
@@ -39,6 +38,7 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(*args, **kwargs)
         self.set_title("VlezeApp")
         self.set_default_size(900, 600)
+        self.set_icon_name("com.vlezeapp.app")
 
         # ── Сервисы ─────────────────────────────────────────────────────
         self.app_config: AppConfig = AppConfig()
@@ -46,6 +46,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.ping_checker: PingChecker = PingChecker()
         self.config_store: ConfigStore | None = None
         self.selected_entry: dict[str, Any] | None = None
+        self.is_running: bool = False
 
         if self.app_config.is_valid():
             self.config_store = ConfigStore(VLESS_DIR)
@@ -56,12 +57,25 @@ class MainWindow(Adw.ApplicationWindow):
         self.dashboard_page: DashboardPage = DashboardPage()
         self.configs_page: ConfigsPage = ConfigsPage()
         self.log_page: LogPage = LogPage()
+        self.settings_page: SettingsPage = SettingsPage(self.app_config)
 
         # ── Stack страниц ───────────────────────────────────────────────
         self.page_stack: Gtk.Stack = Gtk.Stack()
         self.page_stack.add_named(self.dashboard_page, "dashboard")
         self.page_stack.add_named(self.configs_page, "configs")
         self.page_stack.add_named(self.log_page, "logs")
+        self.page_stack.add_named(self.settings_page, "settings")
+
+        # ── Кнопка старт/стоп ───────────────────────────────────────────
+        self.start_stop_btn: Gtk.Button = Gtk.Button.new_with_label("\u25b6 " + _("Start"))
+        self.start_stop_btn.add_css_class("suggested-action")
+        self.start_stop_btn.set_sensitive(False)
+        self.start_stop_btn.set_margin_start(6)
+        self.start_stop_btn.set_margin_end(6)
+        self.start_stop_btn.set_margin_top(6)
+        self.start_stop_btn.set_margin_bottom(6)
+        self.start_stop_btn.set_halign(Gtk.Align.FILL)
+        self.start_stop_btn.connect("clicked", self._on_toggle)
 
         # ── Боковая панель ──────────────────────────────────────────────
         self.nav_list: Gtk.ListBox = self._create_sidebar()
@@ -73,12 +87,6 @@ class MainWindow(Adw.ApplicationWindow):
         header: Adw.HeaderBar = Adw.HeaderBar()
         header.set_title_widget(Gtk.Label(label="VlezeApp"))
 
-        # Кнопка настроек
-        settings_btn: Gtk.Button = Gtk.Button.new_from_icon_name("emblem-system-symbolic")
-        settings_btn.set_tooltip_text(_("Settings"))
-        settings_btn.connect("clicked", self._on_settings)
-        header.pack_start(settings_btn)
-
         toolbar_view.add_top_bar(header)
 
         # ── Основной layout ─────────────────────────────────────────────
@@ -87,6 +95,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Sidebar слева
         sidebar_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         sidebar_box.set_size_request(200, -1)
+        sidebar_box.append(self.start_stop_btn)
+        # Сепаратор под кнопкой
+        sep: Gtk.Separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        sep.set_margin_start(6)
+        sep.set_margin_end(6)
+        sep.set_margin_bottom(6)
+        sidebar_box.append(sep)
         sidebar_box.append(self.nav_list)
         main_box.append(sidebar_box)
 
@@ -98,9 +113,6 @@ class MainWindow(Adw.ApplicationWindow):
         content_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         content_box.set_hexpand(True)
         content_box.append(self.page_stack)
-
-        self.bottom_bar: BottomBar = BottomBar()
-        content_box.append(self.bottom_bar)
 
         main_box.append(content_box)
 
@@ -129,6 +141,29 @@ class MainWindow(Adw.ApplicationWindow):
         self._tray: TrayService | None = None
         if self.app_config.close_to_tray:
             self._init_tray()
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Управление кнопкой старт/стоп
+    # ──────────────────────────────────────────────────────────────────────
+
+    def _set_start_stop_running(self, running: bool) -> None:
+        """Обновляет состояние кнопки старт/стоп."""
+        self.is_running = running
+        if running:
+            self.start_stop_btn.set_label("\u23f9 " + _("Stop"))
+            self.start_stop_btn.remove_css_class("suggested-action")
+            self.start_stop_btn.add_css_class("destructive-action")
+            self.start_stop_btn.set_sensitive(True)
+        else:
+            self.start_stop_btn.set_label("\u25b6 " + _("Start"))
+            self.start_stop_btn.remove_css_class("destructive-action")
+            self.start_stop_btn.add_css_class("suggested-action")
+            self.start_stop_btn.set_sensitive(True)
+
+    def _set_start_stop_enabled(self, enabled: bool) -> None:
+        """Включает/отключает кнопку старт/стоп."""
+        if not self.is_running:
+            self.start_stop_btn.set_sensitive(enabled)
 
     # ──────────────────────────────────────────────────────────────────────
     # Боковая панель
@@ -185,6 +220,21 @@ class MainWindow(Adw.ApplicationWindow):
         self.log_nav_row.set_child(log_box)
         nav_list.append(self.log_nav_row)
 
+        # Settings row
+        self.settings_nav_row = Gtk.ListBoxRow()
+        settings_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        settings_box.set_margin_start(8)
+        settings_box.set_margin_end(8)
+        settings_box.set_margin_top(6)
+        settings_box.set_margin_bottom(6)
+        settings_icon: Gtk.Image = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
+        settings_label: Gtk.Label = Gtk.Label(label=_("Settings"))
+        settings_label.set_halign(Gtk.Align.START)
+        settings_box.append(settings_icon)
+        settings_box.append(settings_label)
+        self.settings_nav_row.set_child(settings_box)
+        nav_list.append(self.settings_nav_row)
+
         return nav_list
 
     # ──────────────────────────────────────────────────────────────────────
@@ -194,12 +244,12 @@ class MainWindow(Adw.ApplicationWindow):
     def _connect_signals(self) -> None:
         """Подключает сигналы UI."""
         self.nav_list.connect("row-selected", self._on_nav_selected)
-        self.bottom_bar.toggle_btn.connect("clicked", self._on_toggle)
         self.configs_page.download_btn.connect("clicked", self._on_download)
         self.configs_page.file_btn.connect("clicked", self._on_file_select)
         self.configs_page.connect("config-deleted", self._on_config_deleted)
         self.log_page.clear_btn.connect("clicked", self._on_clear_logs)
         self.dashboard_page.ping_btn.connect("clicked", self._on_ping)
+        self.settings_page.connect("settings-saved", self._on_settings_saved)
 
     # ──────────────────────────────────────────────────────────────────────
     # Навигация
@@ -216,6 +266,8 @@ class MainWindow(Adw.ApplicationWindow):
             self.configs_page.connect_selection_handler(self._on_config_selected)
         elif row == self.log_nav_row:
             self.page_stack.set_visible_child_name("logs")
+        elif row == self.settings_nav_row:
+            self.page_stack.set_visible_child_name("settings")
 
     # ──────────────────────────────────────────────────────────────────────
     # Таймер
@@ -230,9 +282,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Проверяем статус xray
         is_running: bool = self.xray_manager.check_status()
-        if not is_running and self.bottom_bar.is_running:
+        if not is_running and self.is_running:
             # xray неожиданно остановился
-            self.bottom_bar.set_running(False)
+            self._set_start_stop_running(False)
             self.dashboard_page.update_status(False)
 
         return True  # continue timer
@@ -245,7 +297,7 @@ class MainWindow(Adw.ApplicationWindow):
         """Обработка выбора конфига."""
         if row and hasattr(row, "entry"):
             self.selected_entry = row.entry
-            self.bottom_bar.set_config_selected(True)
+            self._set_start_stop_enabled(True)
 
             # Сохранить последний сервер
             if self.app_config.remember_last_server:
@@ -253,7 +305,7 @@ class MainWindow(Adw.ApplicationWindow):
                 self.app_config._save_config()
         else:
             self.selected_entry = None
-            self.bottom_bar.set_config_selected(False)
+            self._set_start_stop_enabled(False)
 
     # ──────────────────────────────────────────────────────────────────────
     # Удаление конфига
@@ -307,7 +359,7 @@ class MainWindow(Adw.ApplicationWindow):
                     break
             if not found:
                 self.selected_entry = None
-                self.bottom_bar.set_config_selected(False)
+                self._set_start_stop_enabled(False)
 
     # ──────────────────────────────────────────────────────────────────────
     # Старт / Стоп
@@ -315,7 +367,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_toggle(self, btn: Gtk.Button) -> None:
         """Переключение Старт/Стоп."""
-        if self.bottom_bar.is_running:
+        if self.is_running:
             self._on_stop()
         else:
             self._on_start()
@@ -341,7 +393,7 @@ class MainWindow(Adw.ApplicationWindow):
             success, message = self.xray_manager.start(temp_config)
 
             if success:
-                self.bottom_bar.set_running(True)
+                self._set_start_stop_running(True)
                 config_name: str = self.selected_entry.get("name", _("Unknown"))
                 self.dashboard_page.update_status(True, config_name)
                 self.configs_page.highlight_connected(self.selected_entry)
@@ -360,7 +412,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_stop(self) -> None:
         """Остановка xray."""
         self.xray_manager.stop()
-        self.bottom_bar.set_running(False)
+        self._set_start_stop_running(False)
         self.dashboard_page.update_status(False)
         # Сбрасываем пинг
         self.dashboard_page.ping_row.set_subtitle("\u2014")
@@ -501,27 +553,8 @@ class MainWindow(Adw.ApplicationWindow):
     # Настройки
     # ──────────────────────────────────────────────────────────────────────
 
-    def _on_settings(self, btn: Gtk.Button) -> None:
-        """Открыть настройки."""
-        dialog: SettingsDialog = SettingsDialog(self.app_config, self)
-        dialog.present()
-
-        # Сохранить настройки при закрытии
-        dialog.connect("closed", self._on_settings_closed)
-
-    def _on_settings_closed(self, dialog: SettingsDialog) -> None:
-        """Обработка закрытия настроек."""
-        # Обновить настройки
-        self.app_config.remember_last_server = dialog.get_remember_last_server()
-        self.app_config.autostart_xray = dialog.get_autostart_xray()
-        self.app_config.close_to_tray = dialog.get_close_to_tray()
-        self.app_config._save_config()
-
-        # Если папка изменилась — перезагрузить конфиги
-        if self.config_store:
-            self.config_store.set_vless_dir(VLESS_DIR)
-        self._refresh_configs()
-
+    def _on_settings_saved(self, settings_page: SettingsPage) -> None:
+        """Обработка сохранения настроек."""
         # Обновить трей в зависимости от настройки
         if self.app_config.close_to_tray and self._tray is None:
             self._init_tray()
@@ -585,7 +618,7 @@ class MainWindow(Adw.ApplicationWindow):
             for entry in cfg["data"].get("entries", []):
                 if entry.get("name") == self.app_config.last_server_name:
                     self.selected_entry = entry
-                    self.bottom_bar.set_config_selected(True)
+                    self._set_start_stop_enabled(True)
                     self.dashboard_page.update_status(False, entry["name"])
                     return
 
