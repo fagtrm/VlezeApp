@@ -1,4 +1,0 @@
-## Qwen Added Memories
-- VlezeApp — GTK4/Libadwaita десктопное приложение для управления VLESS/Xray. Ключевые решения: VLESS_DIR фиксирован (~/.config/VlezeApp/vless), табы конфигов (до 5, config_1..5.json), ConfigRow наследуется от Gtk.ListBoxRow с Adw.ActionRow внутри Box (обход бага GTK4 grab_focus), сигналы row-selected для навигации и выбора серверов. 78 тестов проходят. Обсуждался TUN режим для полного туннелирования трафика (вместо SOCKS5 прокси) — не реализовано, пользователь хочет вернуться позже.
-- **UI структура**: Кнопка старт/стоп вынесена в боковую панель навигации (sidebar_box) над Gtk.ListBox навигации, отделена горизонтальным Gtk.Separator. Кнопка НЕ в HeaderBar и НЕ в BottomBar (BottomBar удалён). Sidebar: Gtk.Box с кнопкой → сепаратор → nav_list (Gtk.ListBox).
-- VlezeApp UI: Кнопка старт/стоп находится в боковой панели (sidebar_box) над Gtk.ListBox навигации, отделена горизонтальным Gtk.Separator. BottomBar удалён, кнопка НЕ в HeaderBar.

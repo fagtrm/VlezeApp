@@ -19,14 +19,14 @@ class DashboardPage(Gtk.Box):
     """Страница Dashboard."""
 
     def __init__(self) -> None:
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.set_margin_start(24)
         self.set_margin_end(24)
-        self.set_margin_top(24)
+        self.set_margin_top(12)
         self.set_margin_bottom(24)
 
         # Статус
-        self.status_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.status_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.status_box.set_halign(Gtk.Align.FILL)
         self.status_box.set_valign(Gtk.Align.START)
         self.status_box.set_hexpand(True)
@@ -55,15 +55,16 @@ class DashboardPage(Gtk.Box):
         self.ping_row.set_subtitle("\u2014")
         self.ping_icon: Gtk.Image = Gtk.Image.new_from_icon_name("view-refresh-symbolic")
         self.ping_row.add_prefix(self.ping_icon)
-        status_card.add(self.ping_row)
 
-        # Кнопка ручного пинга
+        # Кнопка ручного пинга — в правой части строки
         self.ping_btn: Gtk.Button = Gtk.Button.new_with_label(_("Check ping"))
         self.ping_btn.set_tooltip_text(_("Check latency via VPN"))
-        self.ping_btn.set_halign(Gtk.Align.CENTER)
-        self.ping_btn.set_margin_top(6)
         self.ping_btn.set_sensitive(False)
-        status_card.add(self.ping_btn)
+        self.ping_btn.set_margin_top(4)
+        self.ping_btn.set_margin_bottom(4)
+        self.ping_row.add_suffix(self.ping_btn)
+
+        status_card.add(self.ping_row)
 
         self.status_box.append(status_card)
         self.append(self.status_box)
