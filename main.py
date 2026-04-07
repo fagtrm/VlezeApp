@@ -29,6 +29,10 @@ class VlezeApp(Adw.Application):
         self.connect("activate", self._on_activate)
 
     def _on_activate(self, app: "VlezeApp") -> None:
+        # Регистрируем иконку в теме GTK ДО создания окна
+        icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        icon_theme.add_resource_path("/com/vlezeapp/app/icons")
+
         win = MainWindow(application=app)
         win.enable_tray()
         win.present()

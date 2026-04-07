@@ -33,10 +33,9 @@ class DashboardPage(Gtk.Box):
 
         # Карточка статуса
         status_card: Adw.PreferencesGroup = Adw.PreferencesGroup()
-        status_card.set_title(_("Status"))
 
         self.status_row: Adw.ActionRow = Adw.ActionRow()
-        self.status_row.set_title(_("State"))
+        self.status_row.set_title(_("Status"))
         self.status_row.set_subtitle(_("Not connected"))
         self.status_icon: Gtk.Image = Gtk.Image.new_from_icon_name("network-offline-symbolic")
         self.status_row.add_prefix(self.status_icon)
@@ -45,8 +44,9 @@ class DashboardPage(Gtk.Box):
         self.config_row: Adw.ActionRow = Adw.ActionRow()
         self.config_row.set_title(_("Active config"))
         self.config_row.set_subtitle(_("Not selected"))
-        config_icon: Gtk.Image = Gtk.Image.new_from_icon_name("document-open-recent-symbolic")
-        self.config_row.add_prefix(config_icon)
+        self.config_icon: Gtk.Label = Gtk.Label(label="\U0001F55B")
+        self.config_icon.set_margin_end(6)
+        self.config_row.add_prefix(self.config_icon)
         status_card.add(self.config_row)
 
         # Задержка (пинг)
@@ -70,7 +70,7 @@ class DashboardPage(Gtk.Box):
 
     # ── Публичный API ─────────────────────────────────────────────────────
 
-    def update_status(self, is_connected: bool, config_name: str = "") -> None:
+    def update_status(self, is_connected: bool, config_name: str = "", icon: str = "") -> None:
         """Обновляет статус на дашборде."""
         if is_connected:
             self.status_row.set_subtitle(_("Connected"))
@@ -85,6 +85,12 @@ class DashboardPage(Gtk.Box):
 
         if config_name:
             self.config_row.set_subtitle(config_name)
+
+        # Обновляем иконку флага
+        if icon:
+            self.config_icon.set_label(icon)
+        else:
+            self.config_icon.set_label("\U0001F55B")
 
     def update_ping(self, success: bool, message: str) -> None:
         """Обновляет отображение задержки."""

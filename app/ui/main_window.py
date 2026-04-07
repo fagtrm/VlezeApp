@@ -395,7 +395,8 @@ class MainWindow(Adw.ApplicationWindow):
             if success:
                 self._set_start_stop_running(True)
                 config_name: str = self.selected_entry.get("name", _("Unknown"))
-                self.dashboard_page.update_status(True, config_name)
+                icon: str = self.selected_entry.get("icon", "")
+                self.dashboard_page.update_status(True, config_name, icon)
                 self.configs_page.highlight_connected(self.selected_entry)
                 # Переключаемся на дашборд
                 self.nav_list.select_row(self.dash_row)
@@ -417,6 +418,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Сбрасываем пинг
         self.dashboard_page.ping_row.set_subtitle("\u2014")
         self.dashboard_page.ping_icon.set_from_icon_name("view-refresh-symbolic")
+        # Сбрасываем иконку конфига на часы
+        self.dashboard_page.config_icon.set_label("\U0001F55B")
         # Сбрасываем выделение
         self.configs_page.highlight_connected(None)
 
@@ -619,7 +622,8 @@ class MainWindow(Adw.ApplicationWindow):
                 if entry.get("name") == self.app_config.last_server_name:
                     self.selected_entry = entry
                     self._set_start_stop_enabled(True)
-                    self.dashboard_page.update_status(False, entry["name"])
+                    icon: str = entry.get("icon", "")
+                    self.dashboard_page.update_status(False, entry["name"], icon)
                     return
 
     # ──────────────────────────────────────────────────────────────────────
