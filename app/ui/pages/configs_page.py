@@ -74,7 +74,28 @@ class ConfigsPage(Gtk.Box):
         self.file_btn.set_tooltip_text(_("Select a file from computer"))
         load_box.append(self.file_btn)
 
+        # Кнопка фильтра (поиск)
+        self.filter_btn: Gtk.Button = Gtk.Button.new_from_icon_name("system-search-symbolic")
+        self.filter_btn.set_tooltip_text(_("Filter configs"))
+        self.filter_btn.connect("clicked", self._on_filter_toggle)
+        load_box.append(self.filter_btn)
+
         self.append(load_box)
+
+        # ── Поле поиска (скрыто по умолчанию) ─────────────────────────────
+        self.search_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.search_box.set_hexpand(True)
+        self.search_box.set_visible(False)
+
+        self.search_entry: Gtk.SearchEntry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text(_("Filter by name, e.g. whitelist..."))
+        self.search_entry.set_hexpand(True)
+        self.search_entry.connect("search-changed", self._on_search_changed)
+        self.search_entry.connect("activate", self._on_search_activated)
+        self.search_entry.connect("stop-search", self._on_stop_search)
+        self.search_box.append(self.search_entry)
+
+        self.append(self.search_box)
 
         # ── Табы (Notebook) ───────────────────────────────────────────────
         self.notebook: Gtk.Notebook = Gtk.Notebook()
@@ -137,6 +158,95 @@ class ConfigsPage(Gtk.Box):
         if config_name:
             self.emit("config-deleted", config_name)
 
+    # ── Обработчики фильтра ───────────────────────────────────────────────
+
+    def _on_filter_toggle(self, _btn: Gtk.Button) -> None:
+        """Показать/скрыть поле поиска."""
+        is_visible = self.search_box.get_visible()
+        self.search_box.set_visible(not is_visible)
+        if not is_visible:
+            self.search_entry.grab_focus()
+        else:
+            self._clear_search_filter()
+
+    def _on_search_changed(self, entry: Gtk.SearchEntry) -> None:
+        """Фильтрация при изменении текста поиска."""
+        self._apply_filter(entry.get_text())
+
+    def _on_search_activated(self, _entry: Gtk.SearchEntry) -> None:
+        """Обработка нажатия Enter в поле поиска."""
+        # Выбираем первый видимый результат
+        self._select_first_visible()
+
+    def _on_stop_search(self, _entry: Gtk.SearchEntry) -> None:
+        """Скрыть поле поиска при нажатии встроенной кнопки очистки."""
+        self.search_box.set_visible(False)
+        self._clear_search_filter()
+        self.search_entry.set_text("")
+
+    def _clear_search_filter(self) -> None:
+        """Убрать фильтр со всех строк активного таба."""
+        current_page = self.notebook.get_current_page()
+        if current_page < 0:
+            return
+
+        page = self.notebook.get_nth_page(current_page)
+        listbox = self._get_listbox_for_page(page)
+        if not listbox:
+            return
+
+        row = listbox.get_row_at_index(0)
+        while row:
+            row.set_visible(True)
+            next_idx = row.get_index() + 1
+            row = listbox.get_row_at_index(next_idx)
+
+    def _apply_filter(self, query: str) -> None:
+        """Применить фильтр к строкам активного таба.
+
+        Фильтрует по имени сервера (entry["name"]).
+        """
+        current_page = self.notebook.get_current_page()
+        if current_page < 0:
+            return
+
+        page = self.notebook.get_nth_page(current_page)
+        listbox = self._get_listbox_for_page(page)
+        if not listbox:
+            return
+
+        query_lower = query.lower().strip()
+
+        row = listbox.get_row_at_index(0)
+        while row:
+            if hasattr(row, "entry"):
+                entry_name = row.entry.get("name", "").lower()
+                matches = not query_lower or query_lower in entry_name
+                row.set_visible(matches)
+            else:
+                row.set_visible(True)
+            next_idx = row.get_index() + 1
+            row = listbox.get_row_at_index(next_idx)
+
+    def _select_first_visible(self) -> None:
+        """Выбрать первую видимую строку в активном табе."""
+        current_page = self.notebook.get_current_page()
+        if current_page < 0:
+            return
+
+        page = self.notebook.get_nth_page(current_page)
+        listbox = self._get_listbox_for_page(page)
+        if not listbox:
+            return
+
+        row = listbox.get_row_at_index(0)
+        while row:
+            if row.get_visible():
+                listbox.select_row(row)
+                return
+            next_idx = row.get_index() + 1
+            row = listbox.get_row_at_index(next_idx)
+
     # ── Публичный API ─────────────────────────────────────────────────────
 
     def build_tabs(self, configs: list[dict]) -> None:
@@ -192,6 +302,19 @@ class ConfigsPage(Gtk.Box):
             self.notebook.set_current_page(0)
         self.notebook.show()
         self.notebook.queue_draw()
+
+        # Сбрасываем фильтр при перестроении табов
+        self._clear_search_filter()
+        self.search_entry.set_text("")
+        self.search_box.set_visible(False)
+
+        # Подключаем сигнал переключения таба для сброса фильтра
+        self.notebook.connect("switch-page", self._on_tab_switched)
+
+    def _on_tab_switched(self, _notebook: Gtk.Notebook, _page: Gtk.Widget, _page_num: int) -> None:
+        """Сбросить фильтр при переключении таба."""
+        self._clear_search_filter()
+        self.search_entry.set_text("")
 
     def _format_tab_name(self, config_name: str) -> str:
         """Преобразовать 'config_1' → 'Конфигурация 1'."""
@@ -269,3 +392,18 @@ class ConfigsPage(Gtk.Box):
             listbox = self._get_listbox_for_page(page)
             if listbox:
                 listbox.connect("row-selected", callback)
+
+    def set_filter_text(self, text: str) -> None:
+        """Установить текст фильтра и применить его.
+
+        Args:
+            text: Строка для поиска по имени сервера.
+        """
+        self.search_entry.set_text(text)
+        if text and not self.search_box.get_visible():
+            self.search_box.set_visible(True)
+
+    def clear_filter(self) -> None:
+        """Очистить фильтр поиска."""
+        self._clear_search_filter()
+        self.search_entry.set_text("")

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Конвертация JPG иконки во все нужные размеры для GTK4 приложения."""
+"""Конвертация PNG иконки во все нужные размеры для GTK4 приложения."""
 
 from PIL import Image
 import os
 
-SRC = "/home/mrpower/Разработка/AppImgages/vlezeappico.jpg"
+SRC = "/home/mrpower/Разработка/AppImgages/vlezeappico_fixed.png"
 BASE = "/home/mrpower/Разработка/VlezeApp/data/icons/hicolor"
-ICON_ID = "com.github.fagtrm.VlezeApp"
+ICON_ID = "com.vlezeapp.app"
 
 SIZES = [16, 32, 48, 64, 128, 256]
 

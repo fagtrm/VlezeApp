@@ -262,7 +262,7 @@ class TrayService:
             case "Id":         return _v("s", "vlezeapp")
             case "Title":      return _v("s", "VlezeApp")
             case "Status":     return _v("s", "Active")
-            case "IconName":   return _v("s", "network-vpn-symbolic")
+            case "IconName":   return _v("s", "com.vlezeapp.app")
             case "Menu":       return _v("o", _MENU_PATH)
             case "ItemIsMenu": return _v("b", False)
             case "ToolTip":
