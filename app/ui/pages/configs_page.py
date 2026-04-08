@@ -351,6 +351,7 @@ class ConfigsPage(Gtk.Box):
 
     def highlight_connected(self, entry: dict | None) -> None:
         """Подсвечивает подключённую строку зелёным фоном во всех табах."""
+        entry_uid = entry.get("uid", "") if entry else ""
         for i in range(self.notebook.get_n_pages()):
             page = self.notebook.get_nth_page(i)
             listbox = self._get_listbox_for_page(page)
@@ -358,7 +359,9 @@ class ConfigsPage(Gtk.Box):
                 row = listbox.get_row_at_index(0)
                 while row:
                     if hasattr(row, "set_connected"):
-                        row.set_connected(getattr(row, "entry", None) is entry)
+                        row_entry = getattr(row, "entry", None)
+                        is_match = entry and row_entry and row_entry.get("uid", "") == entry_uid
+                        row.set_connected(is_match)
                     next_idx = row.get_index() + 1
                     row = listbox.get_row_at_index(next_idx)
 
@@ -392,6 +395,24 @@ class ConfigsPage(Gtk.Box):
             listbox = self._get_listbox_for_page(page)
             if listbox:
                 listbox.connect("row-selected", callback)
+
+    def select_entry(self, entry: dict | None) -> None:
+        """Найти и выделить строку с данным entry во всех табах."""
+        if entry is None:
+            return
+        target_uid = entry.get("uid", "")
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            listbox = self._get_listbox_for_page(page)
+            if not listbox:
+                continue
+            row = listbox.get_row_at_index(0)
+            while row:
+                if hasattr(row, "entry") and row.entry.get("uid", "") == target_uid:
+                    listbox.select_row(row)
+                    return
+                next_idx = row.get_index() + 1
+                row = listbox.get_row_at_index(next_idx)
 
     def set_filter_text(self, text: str) -> None:
         """Установить текст фильтра и применить его.

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import re
+import uuid
 from typing import Any
 from urllib.parse import parse_qs, unquote
 
@@ -62,6 +63,7 @@ class VLESSParser:
             alpn, sni, fp, flow, pbk, sid, headerType, name, icon, raw_link.
         """
         result: dict[str, Any] = {
+            "uid": str(uuid.uuid4()),
             "id": "",
             "host": "",
             "port": "",

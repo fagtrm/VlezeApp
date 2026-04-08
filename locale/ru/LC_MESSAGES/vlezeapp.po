@@ -256,3 +256,14 @@ msgstr "Удалить"
 
 msgid "Достигнут лимит конфигураций ({}). Удалите старую."
 msgstr "Достигнут лимит конфигураций ({}). Удалите старую."
+
+# === Settings page ===
+msgid "Save"
+msgstr "Сохранить"
+
+# === Search ===
+msgid "Filter by name, e.g. whitelist..."
+msgstr "Фильтр по имени, например whitelist..."
+
+msgid "Filter configs"
+msgstr "Фильтр конфигурации"

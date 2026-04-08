@@ -22,17 +22,27 @@ class XrayConfigGenerator:
     """
 
     @staticmethod
-    def generate_config(vless_entry: dict[str, Any], output_path: Path) -> Path:
+    def generate_config(vless_entry: dict[str, Any], output_path: Path,
+                        overrides: dict[str, str] | None = None) -> Path:
         """Generate an xray configuration file from a VLESS entry.
 
         Args:
             vless_entry: Dictionary produced by VLESSParser.parse_vless_link().
             output_path: Where to write the generated JSON config.
+            overrides: Optional dict of field overrides to apply on top of
+                the parsed vless entry values.
 
         Returns:
             The path to the written configuration file.
         """
-        sni: str = vless_entry.get("sni") or vless_entry["host"]
+        # Применяем overrides к entry
+        entry: dict[str, Any] = dict(vless_entry)
+        if overrides:
+            for key, value in overrides.items():
+                if value:  # не перезаписываем пустыми значениями
+                    entry[key] = value
+
+        sni: str = entry.get("sni") or entry["host"]
 
         config: dict[str, Any] = {
             "log": {
@@ -73,11 +83,11 @@ class XrayConfigGenerator:
                     "settings": {
                         "vnext": [
                             {
-                                "address": vless_entry["host"],
-                                "port": int(vless_entry["port"]),
+                                "address": entry["host"],
+                                "port": int(entry["port"]),
                                 "users": [
                                     {
-                                        "id": vless_entry["id"],
+                                        "id": entry["id"],
                                         "encryption": "none",
                                         "level": 8,
                                     }
@@ -86,8 +96,8 @@ class XrayConfigGenerator:
                         ]
                     },
                     "streamSettings": {
-                        "network": vless_entry["type"],
-                        "security": vless_entry["security"],
+                        "network": entry["type"],
+                        "security": entry["security"],
                     },
                     "mux": {
                         "enabled": False,
@@ -113,52 +123,52 @@ class XrayConfigGenerator:
         stream: dict[str, Any] = config["outbounds"][0]["streamSettings"]
 
         # TLS settings
-        if vless_entry["security"] == "tls":
+        if entry["security"] == "tls":
             stream["tlsSettings"] = {
                 "allowInsecure": False,
                 "serverName": sni,
                 "fingerprint": "chrome",
             }
-            if vless_entry.get("alpn"):
-                stream["tlsSettings"]["alpn"] = [vless_entry["alpn"]]
+            if entry.get("alpn"):
+                stream["tlsSettings"]["alpn"] = [entry["alpn"]]
 
         # Reality settings
-        elif vless_entry["security"] == "reality":
+        elif entry["security"] == "reality":
             stream["realitySettings"] = {
                 "show": False,
-                "fingerprint": vless_entry.get("fp", "chrome"),
+                "fingerprint": entry.get("fp", "chrome"),
                 "serverName": sni,
-                "publicKey": vless_entry.get("pbk", ""),
-                "shortId": vless_entry.get("sid", ""),
+                "publicKey": entry.get("pbk", ""),
+                "shortId": entry.get("sid", ""),
                 "spiderX": "/",
             }
 
         # WebSocket settings
-        if vless_entry["type"] == "ws":
+        if entry["type"] == "ws":
             stream["wsSettings"] = {
-                "path": vless_entry.get("path", "/"),
+                "path": entry.get("path", "/"),
                 "headers": {
-                    "Host": vless_entry.get("host", sni),
+                    "Host": entry.get("host", sni),
                 },
             }
 
         # TCP with HTTP header伪装
-        if vless_entry.get("headerType") == "http":
+        if entry.get("headerType") == "http":
             stream["tcpSettings"] = {
                 "header": {
                     "type": "http",
                     "request": {
-                        "path": [vless_entry.get("path", "/")],
+                        "path": [entry.get("path", "/")],
                         "headers": {
-                            "Host": [vless_entry.get("host", sni)],
+                            "Host": [entry.get("host", sni)],
                         },
                     },
                 },
             }
 
         # Flow for xtls-rprx-vision
-        if vless_entry.get("flow") and vless_entry["security"] in ("tls", "reality"):
-            config["outbounds"][0]["settings"]["vnext"][0]["users"][0]["flow"] = vless_entry["flow"]
+        if entry.get("flow") and entry["security"] in ("tls", "reality"):
+            config["outbounds"][0]["settings"]["vnext"][0]["users"][0]["flow"] = entry["flow"]
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as fh:

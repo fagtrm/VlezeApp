@@ -255,3 +255,14 @@ msgstr "Delete"
 
 msgid "Достигнут лимит конфигураций ({}). Удалите старую."
 msgstr "Configuration limit reached ({}). Delete an old one first."
+
+# === Settings page ===
+msgid "Save"
+msgstr "Save"
+
+# === Search ===
+msgid "Filter by name, e.g. whitelist..."
+msgstr "Filter by name, e.g. whitelist..."
+
+msgid "Filter configs"
+msgstr "Filter configs"

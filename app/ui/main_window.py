@@ -9,6 +9,7 @@ MainWindow — главное окно приложения VlezeApp.
 """
 from __future__ import annotations
 
+import json
 import threading
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,7 @@ from app.core.vless_parser import VLESSParser
 from app.ui.pages import DashboardPage, ConfigsPage, LogPage, SettingsPage
 from app.ui.pages.configs_page import MAX_CONFIGS
 from app.ui.widgets import ConfigRow
+from app.ui.dialogs import ConfigEditDialog
 from app.services import TrayService, FileDownloader
 
 
@@ -249,6 +251,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.configs_page.connect("config-deleted", self._on_config_deleted)
         self.log_page.clear_btn.connect("clicked", self._on_clear_logs)
         self.dashboard_page.ping_btn.connect("clicked", self._on_ping)
+        self.dashboard_page.config_settings_btn.connect("clicked", self._on_dashboard_configure)
         self.settings_page.connect("settings-saved", self._on_settings_saved)
 
     # ──────────────────────────────────────────────────────────────────────
@@ -264,6 +267,10 @@ class MainWindow(Adw.ApplicationWindow):
             self._refresh_configs()
             # Переподключаем обработчик выбора (табы пересоздаются)
             self.configs_page.connect_selection_handler(self._on_config_selected)
+            # Восстанавливаем выделение и подсветку
+            if self.selected_entry:
+                self.configs_page.select_entry(self.selected_entry)
+                self.configs_page.highlight_connected(self.selected_entry)
         elif row == self.log_nav_row:
             self.page_stack.set_visible_child_name("logs")
         elif row == self.settings_nav_row:
@@ -295,17 +302,27 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_config_selected(self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None) -> None:
         """Обработка выбора конфига."""
-        if row and hasattr(row, "entry"):
-            self.selected_entry = row.entry
-            self._set_start_stop_enabled(True)
+        if row is None:
+            # Игнорируем сброс выделения при перестроении табов
+            return
+        if not hasattr(row, "entry"):
+            return
 
-            # Сохранить последний сервер
-            if self.app_config.remember_last_server:
-                self.app_config.last_server_name = row.entry.get("name", "")
-                self.app_config._save_config()
-        else:
-            self.selected_entry = None
-            self._set_start_stop_enabled(False)
+        # Если выбран другой сервер — удаляем overridden конфиг
+        if self.selected_entry and row.entry.get("uid") != self.selected_entry.get("uid"):
+            if self._overridden_path.exists():
+                self._overridden_path.unlink()
+
+        self.selected_entry = row.entry
+        self._set_start_stop_enabled(True)
+
+        # Сохранить последний сервер
+        if self.app_config.remember_last_server:
+            self.app_config.last_server_name = row.entry.get("name", "")
+            self.app_config._save_config()
+
+        # Обновить иконку предупреждения и кнопку настроек
+        self._update_row_warning_icons()
 
     # ──────────────────────────────────────────────────────────────────────
     # Удаление конфига
@@ -362,6 +379,83 @@ class MainWindow(Adw.ApplicationWindow):
                 self._set_start_stop_enabled(False)
 
     # ──────────────────────────────────────────────────────────────────────
+    # Редактирование конфига
+    # ──────────────────────────────────────────────────────────────────────
+
+    @property
+    def _overridden_path(self) -> Path:
+        """Путь к файлу с переопределённым конфигом."""
+        return CONFIG_DIR / "temp" / "current_config_overridden.json"
+
+    def _has_overridden_config(self) -> bool:
+        """Есть ли файл с переопределённым конфигом."""
+        return self._overridden_path.exists()
+
+    def _on_dashboard_configure(self, _btn: Gtk.Button) -> None:
+        """Открыть диалог редактирования выбранного конфига с Dashboard."""
+        if not self.selected_entry:
+            return
+        dialog = ConfigEditDialog(self.selected_entry, self, self._overridden_path)
+        dialog.set_save_callback(lambda: self._on_config_edit_save(dialog))
+        dialog.set_reset_callback(lambda: self._on_config_edit_reset(dialog))
+        dialog.present()
+
+    def _on_config_edit_save(self, dialog: ConfigEditDialog) -> None:
+        """Сохранить overridden конфиг в отдельный файл."""
+        overrides = dialog.get_overrides()
+        # Генерируем полный конфиг с overrides и сохраняем
+        temp_dir = CONFIG_DIR / "temp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        XrayConfigGenerator.generate_config(self.selected_entry, self._overridden_path, overrides)
+        self._update_row_warning_icons()
+        dialog.close()
+
+        # Если xray запущен — переподключаем
+        if self.is_running:
+            self._restart_xray()
+
+    def _restart_xray(self) -> None:
+        """Перезапустить xray с текущим конфигом."""
+        self.xray_manager.stop()
+        self._set_start_stop_running(False)
+
+        # Используем overridden конфиг если есть, иначе обычный
+        if self._has_overridden_config():
+            config_path = self._overridden_path
+        else:
+            temp_dir = CONFIG_DIR / "temp"
+            temp_dir.mkdir(parents=True, exist_ok=True)
+            config_path = temp_dir / "current_config.json"
+            XrayConfigGenerator.generate_config(self.selected_entry, config_path)
+
+        success, message = self.xray_manager.start(config_path)
+        if success:
+            self._set_start_stop_running(True)
+        else:
+            self._set_start_stop_running(False)
+            self._show_error(_("Не удалось перезапустить xray: {}").format(message))
+
+    def _on_config_edit_reset(self, dialog: ConfigEditDialog) -> None:
+        """Удалить overridden конфиг и сбросить поля диалога к оригиналу."""
+        if self._overridden_path.exists():
+            self._overridden_path.unlink()
+        self._update_row_warning_icons()
+
+        # Если xray запущен — переподключаем с оригинальным конфигом
+        was_running = self.is_running
+        if was_running:
+            self._restart_xray()
+
+        dialog.close()
+
+    def _update_row_warning_icons(self) -> None:
+        """Обновить иконки предупреждений. Показываем если есть overridden файл."""
+        has_overridden = self._has_overridden_config()
+        self.dashboard_page.config_warning_icon.set_visible(has_overridden)
+        # Кнопка настройки всегда активна когда есть выбранный конфиг
+        self.dashboard_page.config_settings_btn.set_sensitive(self.selected_entry is not None)
+
+    # ──────────────────────────────────────────────────────────────────────
     # Старт / Стоп
     # ──────────────────────────────────────────────────────────────────────
 
@@ -377,20 +471,22 @@ class MainWindow(Adw.ApplicationWindow):
         if not self.selected_entry:
             return
 
-        # Генерируем временный конфиг
         temp_dir: Path = CONFIG_DIR / "temp"
         temp_dir.mkdir(parents=True, exist_ok=True)
-        temp_config: Path = temp_dir / "current_config.json"
 
-        try:
-            config_path: Path = XrayConfigGenerator.generate_config(
-                self.selected_entry, temp_config
-            )
+        # Если есть overridden конфиг — используем его, иначе генерируем обычный
+        if self._has_overridden_config():
+            config_path = self._overridden_path
+            print(_("Используем переопределённый конфиг: {}").format(config_path))
+        else:
+            config_path = temp_dir / "current_config.json"
+            XrayConfigGenerator.generate_config(self.selected_entry, config_path)
             print(_("Конфиг создан: {}").format(config_path))
 
+        try:
             success: bool
             message: str
-            success, message = self.xray_manager.start(temp_config)
+            success, message = self.xray_manager.start(config_path)
 
             if success:
                 self._set_start_stop_running(True)
@@ -418,8 +514,6 @@ class MainWindow(Adw.ApplicationWindow):
         # Сбрасываем пинг
         self.dashboard_page.ping_row.set_subtitle("\u2014")
         self.dashboard_page.ping_icon.set_from_icon_name("view-refresh-symbolic")
-        # Сбрасываем иконку конфига на часы
-        self.dashboard_page.config_icon.set_label("\U0001F55B")
         # Сбрасываем выделение
         self.configs_page.highlight_connected(None)
 
@@ -552,6 +646,9 @@ class MainWindow(Adw.ApplicationWindow):
         configs = self.config_store.get_configs()
         self.configs_page.build_tabs(configs)
 
+        # Обновляем иконки предупреждений
+        self._update_row_warning_icons()
+
     # ──────────────────────────────────────────────────────────────────────
     # Настройки
     # ──────────────────────────────────────────────────────────────────────
@@ -624,6 +721,7 @@ class MainWindow(Adw.ApplicationWindow):
                     self._set_start_stop_enabled(True)
                     icon: str = entry.get("icon", "")
                     self.dashboard_page.update_status(False, entry["name"], icon)
+                    self._update_row_warning_icons()
                     return
 
     # ──────────────────────────────────────────────────────────────────────

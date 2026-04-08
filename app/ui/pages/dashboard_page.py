@@ -10,9 +10,16 @@ from __future__ import annotations
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, Gdk
 
 from app.i18n import _
+
+# CSS для warning иконки
+_WARNING_CSS = """
+    image.warning {
+        color: @warning_color;
+    }
+"""
 
 
 class DashboardPage(Gtk.Box):
@@ -24,6 +31,15 @@ class DashboardPage(Gtk.Box):
         self.set_margin_end(24)
         self.set_margin_top(12)
         self.set_margin_bottom(24)
+
+        # Применяем CSS для warning
+        display = Gdk.Display.get_default()
+        if display:
+            provider = Gtk.CssProvider()
+            provider.load_from_string(_WARNING_CSS)
+            Gtk.StyleContext.add_provider_for_display(
+                display, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+            )
 
         # Статус
         self.status_box: Gtk.Box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -47,6 +63,23 @@ class DashboardPage(Gtk.Box):
         self.config_icon: Gtk.Label = Gtk.Label(label="\U0001F55B")
         self.config_icon.set_margin_end(6)
         self.config_row.add_prefix(self.config_icon)
+
+        # Кнопка настройки конфига — в правой части строки
+        self.config_settings_btn: Gtk.Button = Gtk.Button.new_from_icon_name("emblem-system-symbolic")
+        self.config_settings_btn.set_tooltip_text(_("Настроить"))
+        self.config_settings_btn.set_sensitive(False)
+        self.config_settings_btn.set_margin_top(4)
+        self.config_settings_btn.set_margin_bottom(4)
+        self.config_row.add_suffix(self.config_settings_btn)
+
+        # Иконка предупреждения (изменённые параметры)
+        self.config_warning_icon: Gtk.Image = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        self.config_warning_icon.set_visible(False)
+        self.config_warning_icon.set_tooltip_text(_("Параметры изменены относительно исходной vless-ссылки"))
+        self.config_warning_icon.add_css_class("warning")
+        self.config_warning_icon.set_margin_end(4)
+        self.config_row.add_prefix(self.config_warning_icon)
+
         status_card.add(self.config_row)
 
         # Задержка (пинг)
@@ -87,11 +120,9 @@ class DashboardPage(Gtk.Box):
         if config_name:
             self.config_row.set_subtitle(config_name)
 
-        # Обновляем иконку флага
+        # Обновляем иконку флага только если передана новая
         if icon:
             self.config_icon.set_label(icon)
-        else:
-            self.config_icon.set_label("\U0001F55B")
 
     def update_ping(self, success: bool, message: str) -> None:
         """Обновляет отображение задержки."""
