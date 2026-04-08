@@ -70,6 +70,14 @@ class TestDefaultConfig:
         """start_minimized should default to False."""
         assert app_config.start_minimized is False
 
+    def test_default_max_log_lines(self, app_config: AppConfig) -> None:
+        """max_log_lines should default to 500."""
+        assert app_config.max_log_lines == 500
+
+    def test_default_enable_logging(self, app_config: AppConfig) -> None:
+        """enable_logging should default to False."""
+        assert app_config.enable_logging is False
+
     def test_creates_config_file(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
         """Initialisation should create the config.json file."""
         config_file = tmp_config_dir / "config.json"
@@ -95,6 +103,8 @@ class TestSaveLoad:
         app_config.autostart_xray = True
         app_config.close_to_tray = True
         app_config.start_minimized = True
+        app_config.max_log_lines = 1000
+        app_config.enable_logging = True
         app_config._save_config()
 
         # Create a fresh instance that will reload from disk
@@ -104,6 +114,8 @@ class TestSaveLoad:
         assert fresh.autostart_xray is True
         assert fresh.close_to_tray is True
         assert fresh.start_minimized is True
+        assert fresh.max_log_lines == 1000
+        assert fresh.enable_logging is True
 
     def test_save_writes_valid_json(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
         """The saved config file should be valid JSON."""
@@ -125,6 +137,8 @@ class TestSaveLoad:
             "autostart_xray",
             "close_to_tray",
             "start_minimized",
+            "max_log_lines",
+            "enable_logging",
         }
         assert expected_keys.issubset(data.keys())
 
@@ -145,6 +159,8 @@ class TestSaveLoad:
         assert cfg.remember_last_server is False
         assert cfg.close_to_tray is False
         assert cfg.start_minimized is False
+        assert cfg.max_log_lines == 500
+        assert cfg.enable_logging is False
 
     def test_is_valid_true(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
         """is_valid should return True when VLESS_DIR exists."""
@@ -164,6 +180,8 @@ class TestSaveLoad:
                 cfg.autostart_xray = False
                 cfg.close_to_tray = False
                 cfg.start_minimized = False
+                cfg.max_log_lines = 500
+                cfg.enable_logging = False
                 assert cfg.is_valid() is False
 
 
@@ -251,3 +269,93 @@ class TestStartMinimized:
         with open(config_file, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         assert data["start_minimized"] is True
+
+
+# ---------------------------------------------------------------------------
+# max_log_lines
+# ---------------------------------------------------------------------------
+
+class TestMaxLogLines:
+    """Tests for the max_log_lines setting."""
+
+    def test_set_max_log_lines(self, app_config: AppConfig) -> None:
+        """set_max_log_lines should update the attribute."""
+        app_config.set_max_log_lines(1000)
+        assert app_config.max_log_lines == 1000
+
+    def test_set_max_log_lines_clamps_min(self, app_config: AppConfig) -> None:
+        """set_max_log_lines should clamp to minimum of 50."""
+        app_config.set_max_log_lines(10)
+        assert app_config.max_log_lines == 50
+
+    def test_set_max_log_lines_clamps_max(self, app_config: AppConfig) -> None:
+        """set_max_log_lines should clamp to maximum of 5000."""
+        app_config.set_max_log_lines(10000)
+        assert app_config.max_log_lines == 5000
+
+    def test_set_max_log_lines_persists(self, app_config: AppConfig) -> None:
+        """set_max_log_lines should save the value to disk."""
+        app_config.set_max_log_lines(1000)
+
+        fresh = AppConfig()
+        assert fresh.max_log_lines == 1000
+
+    def test_get_max_log_lines_default(self, app_config: AppConfig) -> None:
+        """get_max_log_lines should return 500 by default."""
+        assert app_config.get_max_log_lines() == 500
+
+    def test_get_max_log_lines_after_set(self, app_config: AppConfig) -> None:
+        """get_max_log_lines should reflect the last set value."""
+        app_config.set_max_log_lines(1500)
+        assert app_config.get_max_log_lines() == 1500
+
+    def test_max_log_lines_in_saved_file(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
+        """The saved config file should contain the max_log_lines value."""
+        app_config.set_max_log_lines(750)
+        config_file = tmp_config_dir / "config.json"
+        with open(config_file, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        assert data["max_log_lines"] == 750
+
+
+# ---------------------------------------------------------------------------
+# enable_logging
+# ---------------------------------------------------------------------------
+
+class TestEnableLogging:
+    """Tests for the enable_logging setting."""
+
+    def test_set_enable_logging_true(self, app_config: AppConfig) -> None:
+        """set_enable_logging(True) should update the attribute."""
+        app_config.set_enable_logging(True)
+        assert app_config.enable_logging is True
+
+    def test_set_enable_logging_false(self, app_config: AppConfig) -> None:
+        """set_enable_logging(False) should update the attribute."""
+        app_config.set_enable_logging(True)
+        app_config.set_enable_logging(False)
+        assert app_config.enable_logging is False
+
+    def test_set_enable_logging_persists(self, app_config: AppConfig) -> None:
+        """set_enable_logging should save the value to disk."""
+        app_config.set_enable_logging(True)
+
+        fresh = AppConfig()
+        assert fresh.enable_logging is True
+
+    def test_get_enable_logging_default(self, app_config: AppConfig) -> None:
+        """get_enable_logging should return False by default."""
+        assert app_config.get_enable_logging() is False
+
+    def test_get_enable_logging_after_set(self, app_config: AppConfig) -> None:
+        """get_enable_logging should reflect the last set value."""
+        app_config.set_enable_logging(True)
+        assert app_config.get_enable_logging() is True
+
+    def test_enable_logging_in_saved_file(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
+        """The saved config file should contain the enable_logging value."""
+        app_config.set_enable_logging(True)
+        config_file = tmp_config_dir / "config.json"
+        with open(config_file, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        assert data["enable_logging"] is True

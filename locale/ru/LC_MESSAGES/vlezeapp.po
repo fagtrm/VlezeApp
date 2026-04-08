@@ -274,3 +274,16 @@ msgstr "Запускать свёрнутым в трей"
 
 msgid "Application will start hidden in the system tray"
 msgstr "Приложение будет запускаться скрытым в системном трее"
+
+# === Settings - Log limits ===
+msgid "Maximum log lines"
+msgstr "Максимум строк логов"
+
+msgid "Number of recent log lines kept in memory"
+msgstr "Количество последних строк логов, хранимых в памяти"
+
+msgid "Enable xray logging"
+msgstr "Включить логирование xray"
+
+msgid "Write xray output to log file with rotation"
+msgstr "Записывать вывод xray в файл с автоматической ротацией"

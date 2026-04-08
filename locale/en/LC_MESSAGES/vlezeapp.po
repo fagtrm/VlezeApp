@@ -273,3 +273,16 @@ msgstr "Start minimized to tray"
 
 msgid "Application will start hidden in the system tray"
 msgstr "Application will start hidden in the system tray"
+
+# === Settings - Log limits ===
+msgid "Maximum log lines"
+msgstr "Maximum log lines"
+
+msgid "Number of recent log lines kept in memory"
+msgstr "Number of recent log lines kept in memory"
+
+msgid "Enable xray logging"
+msgstr "Enable xray logging"
+
+msgid "Write xray output to log file with rotation"
+msgstr "Write xray output to log file with rotation"

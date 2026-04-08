@@ -28,6 +28,8 @@ class AppConfig:
         autostart_xray: Whether to auto-start xray on application launch.
         close_to_tray: Whether closing the window hides it to the system tray.
         start_minimized: Whether to start the application minimized to tray.
+        max_log_lines: Maximum number of log lines to keep in memory.
+        enable_logging: Whether xray logging to file is enabled.
     """
 
     def __init__(self) -> None:
@@ -36,6 +38,8 @@ class AppConfig:
         self.autostart_xray: bool = False
         self.close_to_tray: bool = False
         self.start_minimized: bool = False
+        self.max_log_lines: int = 500
+        self.enable_logging: bool = False
 
         self._ensure_config_dir()
         self._load_or_create_config()
@@ -56,6 +60,8 @@ class AppConfig:
                     self.autostart_xray = bool(data.get("autostart_xray", False))
                     self.close_to_tray = bool(data.get("close_to_tray", False))
                     self.start_minimized = bool(data.get("start_minimized", False))
+                    self.max_log_lines = int(data.get("max_log_lines", 500))
+                    self.enable_logging = bool(data.get("enable_logging", False))
             except (json.JSONDecodeError, KeyError):
                 self._save_config()
         else:
@@ -69,6 +75,8 @@ class AppConfig:
             "autostart_xray": self.autostart_xray,
             "close_to_tray": self.close_to_tray,
             "start_minimized": self.start_minimized,
+            "max_log_lines": self.max_log_lines,
+            "enable_logging": self.enable_logging,
         }
         with open(CONFIG_FILE, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2, ensure_ascii=False)
@@ -94,3 +102,21 @@ class AppConfig:
     def get_start_minimized(self) -> bool:
         """Return whether the start-minimized option is enabled."""
         return self.start_minimized
+
+    def set_max_log_lines(self, value: int) -> None:
+        """Set the maximum number of log lines to keep in memory."""
+        self.max_log_lines = max(50, min(value, 5000))  # ограничиваем 50-5000
+        self._save_config()
+
+    def get_max_log_lines(self) -> int:
+        """Return the maximum number of log lines setting."""
+        return self.max_log_lines
+
+    def set_enable_logging(self, value: bool) -> None:
+        """Enable or disable xray logging to file."""
+        self.enable_logging = value
+        self._save_config()
+
+    def get_enable_logging(self) -> bool:
+        """Return whether logging is enabled."""
+        return self.enable_logging

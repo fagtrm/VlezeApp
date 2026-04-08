@@ -7,6 +7,7 @@ non-blocking log capture via a background thread.
 
 from __future__ import annotations
 
+import os
 import signal
 import subprocess
 import threading
@@ -14,6 +15,9 @@ from datetime import datetime
 from pathlib import Path
 
 from app.i18n import _
+
+# Максимальный размер лог-файла перед ротацией (5 МБ)
+_MAX_LOG_FILE_SIZE = 5 * 1024 * 1024
 
 
 class XrayManager:
@@ -23,19 +27,70 @@ class XrayManager:
         process: The running subprocess, or None.
         is_running: Whether xray is currently considered running.
         log_lines: Rolling buffer of log output lines.
+        log_file: Path to the persistent log file.
+        max_log_lines: Maximum number of lines to keep in memory.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        log_file: Path | None = None,
+        max_log_lines: int = 500,
+        enable_logging: bool = True,
+    ) -> None:
         self.process: subprocess.Popen[str] | None = None
         self.is_running: bool = False
         self.log_lines: list[str] = []
-        self.max_log_lines: int = 500
+        self.max_log_lines: int = max_log_lines
+        self.enable_logging: bool = enable_logging
+        self.log_file: Path = log_file or Path.home() / ".config" / "VlezeApp" / "xray.log"
         self._log_thread: threading.Thread | None = None
         self._stop_thread: bool = False
+
+        # Создаём директорию для лог-файла если нужно
+        if self.enable_logging:
+            self.log_file.parent.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
+
+    def _rotate_log_file(self) -> None:
+        """Ротировать лог-файл если он превысил размер."""
+        if not self.log_file.exists():
+            return
+        try:
+            size = os.path.getsize(self.log_file)
+            if size > _MAX_LOG_FILE_SIZE:
+                old_log = self.log_file.with_suffix(".log.1")
+                if old_log.exists():
+                    old_log.unlink()
+                self.log_file.rename(old_log)
+        except OSError:
+            pass
+
+    def _append_to_log_file(self, line: str) -> None:
+        """Добавить строку в лог-файл с ротацией."""
+        if not self.enable_logging:
+            return
+        self._rotate_log_file()
+        try:
+            with open(self.log_file, "a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
+        except OSError:
+            pass
+
+    def _load_recent_logs(self, count: int) -> list[str]:
+        """Загрузить последние N строк из лог-файла."""
+        if not self.log_file.exists():
+            return []
+        try:
+            with open(self.log_file, "r", encoding="utf-8") as fh:
+                lines = fh.readlines()
+            # Берём последние count строк, убираем пустые
+            stripped = [l.rstrip("\n") for l in lines if l.strip()]
+            return stripped[-count:] if len(stripped) > count else stripped
+        except OSError:
+            return []
 
     def _log_reader_thread(self) -> None:
         """Background thread that reads stdout from the xray process."""
@@ -44,9 +99,12 @@ class XrayManager:
                 line = self.process.stdout.readline()
                 if line:
                     line = line.strip()
-                    self.log_lines.append(f"[{self._now()}] {line}")
+                    formatted = f"[{self._now()}] {line}"
+                    self.log_lines.append(formatted)
                     if len(self.log_lines) > self.max_log_lines:
                         self.log_lines = self.log_lines[-self.max_log_lines:]
+                    # Пишем в файл
+                    self._append_to_log_file(formatted)
                 else:
                     break
         except (ValueError, IOError):
@@ -56,9 +114,9 @@ class XrayManager:
                 code = self.process.poll()
                 if code is not None:
                     self.is_running = False
-                    self.log_lines.append(
-                        f"[{self._now()}] {_('xray завершился с кодом')} {code}"
-                    )
+                    msg = f"[{self._now()}] {_('xray завершился с кодом')} {code}"
+                    self.log_lines.append(msg)
+                    self._append_to_log_file(msg)
                     self.process = None
 
     @staticmethod
@@ -93,9 +151,9 @@ class XrayManager:
             )
             self.is_running = True
             self._stop_thread = False
-            self.log_lines = [
-                f"[{self._now()}] {_('xray запущен с PID')} {self.process.pid}"
-            ]
+            start_msg = f"[{self._now()}] {_('xray запущен с PID')} {self.process.pid}"
+            self.log_lines = [start_msg]
+            self._append_to_log_file(start_msg)
 
             self._log_thread = threading.Thread(
                 target=self._log_reader_thread, daemon=True
@@ -106,12 +164,16 @@ class XrayManager:
 
         except FileNotFoundError:
             msg = _("xray не найден в /usr/bin/xray")
-            self.log_lines.append(f"[{self._now()}] {msg}")
+            formatted = f"[{self._now()}] {msg}"
+            self.log_lines.append(formatted)
+            self._append_to_log_file(formatted)
             return False, msg
 
         except Exception as exc:
             msg = _("Ошибка запуска xray: {}").format(exc)
-            self.log_lines.append(f"[{self._now()}] {msg}")
+            formatted = f"[{self._now()}] {msg}"
+            self.log_lines.append(formatted)
+            self._append_to_log_file(formatted)
             return False, msg
 
     def stop(self) -> None:
@@ -127,7 +189,9 @@ class XrayManager:
             except Exception:
                 pass
             finally:
-                self.log_lines.append(f"[{self._now()}] {_('xray остановлен')}")
+                msg = f"[{self._now()}] {_('xray остановлен')}"
+                self.log_lines.append(msg)
+                self._append_to_log_file(msg)
                 self.is_running = False
                 self.process = None
 
@@ -145,8 +209,8 @@ class XrayManager:
             poll = self.process.poll()
             if poll is not None:
                 self.is_running = False
-                self.log_lines.append(
-                    f"[{self._now()}] {_('xray завершился с кодом')} {poll}"
-                )
+                msg = f"[{self._now()}] {_('xray завершился с кодом')} {poll}"
+                self.log_lines.append(msg)
+                self._append_to_log_file(msg)
                 self.process = None
         return self.is_running

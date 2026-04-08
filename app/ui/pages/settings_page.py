@@ -77,6 +77,23 @@ class SettingsPage(Gtk.Box):
         self.start_minimized_row.set_active(app_config.start_minimized)
         general_group.add(self.start_minimized_row)
 
+        # Спиннер: максимальное количество строк логов
+        self.max_log_lines_row: Adw.SpinRow = Adw.SpinRow(
+            adjustment=Gtk.Adjustment.new(
+                app_config.max_log_lines, 50, 5000, 50, 100, 0
+            )
+        )
+        self.max_log_lines_row.set_title(_("Maximum log lines"))
+        self.max_log_lines_row.set_subtitle(_("Number of recent log lines kept in memory"))
+        general_group.add(self.max_log_lines_row)
+
+        # Чекбокс: включить логирование
+        self.enable_logging_row: Adw.SwitchRow = Adw.SwitchRow()
+        self.enable_logging_row.set_title(_("Enable xray logging"))
+        self.enable_logging_row.set_subtitle(_("Write xray output to log file with rotation"))
+        self.enable_logging_row.set_active(app_config.enable_logging)
+        general_group.add(self.enable_logging_row)
+
         self.append(general_group)
 
         # Кнопка сохранения
@@ -95,6 +112,8 @@ class SettingsPage(Gtk.Box):
         self.app_config.autostart_xray = self.get_autostart_xray()
         self.app_config.close_to_tray = self.get_close_to_tray()
         self.app_config.start_minimized = self.get_start_minimized()
+        self.app_config.max_log_lines = self.get_max_log_lines()
+        self.app_config.enable_logging = self.get_enable_logging()
         self.app_config._save_config()
         self.emit("settings-saved")
 
@@ -111,3 +130,9 @@ class SettingsPage(Gtk.Box):
 
     def get_start_minimized(self) -> bool:
         return self.start_minimized_row.get_active()
+
+    def get_max_log_lines(self) -> int:
+        return int(self.max_log_lines_row.get_value())
+
+    def get_enable_logging(self) -> bool:
+        return self.enable_logging_row.get_active()

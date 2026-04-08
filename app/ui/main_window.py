@@ -44,7 +44,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # ── Сервисы ─────────────────────────────────────────────────────
         self.app_config: AppConfig = AppConfig()
-        self.xray_manager: XrayManager = XrayManager()
+        self.xray_manager: XrayManager = XrayManager(
+            max_log_lines=self.app_config.max_log_lines,
+            enable_logging=self.app_config.enable_logging,
+        )
         self.ping_checker: PingChecker = PingChecker()
         self.config_store: ConfigStore | None = None
         self.selected_entry: dict[str, Any] | None = None
@@ -232,6 +235,8 @@ class MainWindow(Adw.ApplicationWindow):
         log_box.append(log_label)
         self.log_nav_row.set_child(log_box)
         nav_list.append(self.log_nav_row)
+        # Скрываем если логирование выключено
+        self.log_nav_row.set_visible(self.app_config.enable_logging)
 
         # Settings row
         self.settings_nav_row = Gtk.ListBoxRow()
@@ -671,6 +676,17 @@ class MainWindow(Adw.ApplicationWindow):
             self._init_tray()
         elif not self.app_config.close_to_tray and self._tray is not None:
             self._shutdown_tray()
+
+        # Показать/скрыть пункт Logs в навигации
+        self.log_nav_row.set_visible(self.app_config.enable_logging)
+
+        # Применить новый лимит логов
+        self.xray_manager.max_log_lines = self.app_config.max_log_lines
+        self.xray_manager.enable_logging = self.app_config.enable_logging
+        # Обрезать текущие логи если они превышают новый лимит
+        if len(self.xray_manager.log_lines) > self.xray_manager.max_log_lines:
+            self.xray_manager.log_lines = self.xray_manager.log_lines[-self.xray_manager.max_log_lines:]
+
         # Примечание: start_minimized применяется только при следующем запуске
 
     # ──────────────────────────────────────────────────────────────────────
