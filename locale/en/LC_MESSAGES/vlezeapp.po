@@ -286,3 +286,14 @@ msgstr "Enable xray logging"
 
 msgid "Write xray output to log file with rotation"
 msgstr "Write xray output to log file with rotation"
+
+# === About Dialog ===
+msgid "About VlezeApp"
+msgstr "About VlezeApp"
+
+msgid ""
+"Desktop VLESS VPN manager built with GTK4/Libadwaita.\n"
+"Parse vless:// links, generate Xray configs, and manage connections."
+msgstr ""
+"Desktop VLESS VPN manager built with GTK4/Libadwaita.\n"
+"Parse vless:// links, generate Xray configs, and manage connections."

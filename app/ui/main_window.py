@@ -30,6 +30,7 @@ from app.ui.pages import DashboardPage, ConfigsPage, LogPage, SettingsPage
 from app.ui.pages.configs_page import MAX_CONFIGS
 from app.ui.widgets import ConfigRow
 from app.ui.dialogs import ConfigEditDialog
+from app.ui.dialogs.about_dialog import AboutDialog
 from app.services import TrayService, FileDownloader
 
 
@@ -91,6 +92,12 @@ class MainWindow(Adw.ApplicationWindow):
         # Заголовок
         header: Adw.HeaderBar = Adw.HeaderBar()
         header.set_title_widget(Gtk.Label(label="VlezeApp"))
+
+        # Кнопка «О программе» слева
+        about_btn: Gtk.Button = Gtk.Button.new_from_icon_name("help-about-symbolic")
+        about_btn.set_tooltip_text(_("About VlezeApp"))
+        about_btn.connect("clicked", self._on_about)
+        header.pack_start(about_btn)
 
         toolbar_view.add_top_bar(header)
 
@@ -724,6 +731,11 @@ class MainWindow(Adw.ApplicationWindow):
             self.hide()
             return True  # Отменяем закрытие
         return False  # Позволяем закрытие
+
+    def _on_about(self, btn: Gtk.Button) -> None:
+        """Показать окно «О программе»."""
+        dialog = AboutDialog(self)
+        dialog.present()
 
     # ──────────────────────────────────────────────────────────────────────
     # Очистка логов
