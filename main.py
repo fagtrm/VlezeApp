@@ -35,7 +35,9 @@ class VlezeApp(Adw.Application):
 
         win = MainWindow(application=app)
         win.enable_tray()
-        win.present()
+        # Показываем окно только если НЕ включён запуск свёрнутым
+        if not win.app_config.start_minimized:
+            win.present()
 
 
 def main() -> int:

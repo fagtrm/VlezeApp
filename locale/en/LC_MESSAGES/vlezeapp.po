@@ -266,3 +266,10 @@ msgstr "Filter by name, e.g. whitelist..."
 
 msgid "Filter configs"
 msgstr "Filter configs"
+
+# === Settings - Start minimized ===
+msgid "Start minimized to tray"
+msgstr "Start minimized to tray"
+
+msgid "Application will start hidden in the system tray"
+msgstr "Application will start hidden in the system tray"

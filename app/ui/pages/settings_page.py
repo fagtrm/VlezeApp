@@ -5,11 +5,13 @@ SettingsPage — страница настроек приложения.
     - remember_last_server
     - autostart_xray
     - close_to_tray
+    - start_minimized
 
 Методы:
     get_remember_last_server() -> bool
     get_autostart_xray()       -> bool
     get_close_to_tray()        -> bool
+    get_start_minimized()      -> bool
 """
 from __future__ import annotations
 
@@ -68,6 +70,13 @@ class SettingsPage(Gtk.Box):
         self.close_to_tray_row.set_active(app_config.close_to_tray)
         general_group.add(self.close_to_tray_row)
 
+        # Чекбокс: запуск свёрнутым в трей
+        self.start_minimized_row: Adw.SwitchRow = Adw.SwitchRow()
+        self.start_minimized_row.set_title(_("Start minimized to tray"))
+        self.start_minimized_row.set_subtitle(_("Application will start hidden in the system tray"))
+        self.start_minimized_row.set_active(app_config.start_minimized)
+        general_group.add(self.start_minimized_row)
+
         self.append(general_group)
 
         # Кнопка сохранения
@@ -85,6 +94,7 @@ class SettingsPage(Gtk.Box):
         self.app_config.remember_last_server = self.get_remember_last_server()
         self.app_config.autostart_xray = self.get_autostart_xray()
         self.app_config.close_to_tray = self.get_close_to_tray()
+        self.app_config.start_minimized = self.get_start_minimized()
         self.app_config._save_config()
         self.emit("settings-saved")
 
@@ -98,3 +108,6 @@ class SettingsPage(Gtk.Box):
 
     def get_close_to_tray(self) -> bool:
         return self.close_to_tray_row.get_active()
+
+    def get_start_minimized(self) -> bool:
+        return self.start_minimized_row.get_active()

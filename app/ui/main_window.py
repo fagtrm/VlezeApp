@@ -144,6 +144,13 @@ class MainWindow(Adw.ApplicationWindow):
         if self.app_config.close_to_tray:
             self._init_tray()
 
+        # ── Запуск свёрнутым в трей ─────────────────────────────────────
+        if self.app_config.start_minimized:
+            # Если трей не инициализирован — инициализируем
+            if self._tray is None:
+                self._init_tray()
+            # Окно НЕ будет показано (контролируется в main.py)
+
     # ──────────────────────────────────────────────────────────────────────
     # Управление кнопкой старт/стоп
     # ──────────────────────────────────────────────────────────────────────
@@ -161,6 +168,10 @@ class MainWindow(Adw.ApplicationWindow):
             self.start_stop_btn.remove_css_class("destructive-action")
             self.start_stop_btn.add_css_class("suggested-action")
             self.start_stop_btn.set_sensitive(True)
+
+        # Обновить меню трея
+        if self._tray:
+            self._tray.update_menu()
 
     def _set_start_stop_enabled(self, enabled: bool) -> None:
         """Включает/отключает кнопку старт/стоп."""
@@ -459,7 +470,7 @@ class MainWindow(Adw.ApplicationWindow):
     # Старт / Стоп
     # ──────────────────────────────────────────────────────────────────────
 
-    def _on_toggle(self, btn: Gtk.Button) -> None:
+    def _on_toggle(self, btn: Gtk.Button | None = None) -> None:
         """Переключение Старт/Стоп."""
         if self.is_running:
             self._on_stop()
@@ -660,6 +671,7 @@ class MainWindow(Adw.ApplicationWindow):
             self._init_tray()
         elif not self.app_config.close_to_tray and self._tray is not None:
             self._shutdown_tray()
+        # Примечание: start_minimized применяется только при следующем запуске
 
     # ──────────────────────────────────────────────────────────────────────
     # Трей
@@ -670,7 +682,12 @@ class MainWindow(Adw.ApplicationWindow):
         if self._tray is None:
             app: Gio.Application | None = self.get_application()
             if app is not None:
-                self._tray = TrayService(self, app)
+                self._tray = TrayService(
+                    self,
+                    app,
+                    toggle_callback=self._on_toggle,
+                    is_running_callback=lambda: self.is_running,
+                )
                 # Перехватываем закрытие: прятаться вместо выхода
                 self.connect("close-request", self._on_close_request)
 

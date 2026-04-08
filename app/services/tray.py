@@ -158,7 +158,13 @@ class TrayService:
     Хранить как атрибут окна (self._tray = TrayService(self, app)).
     """
 
-    def __init__(self, window: "Gtk.Window", app: "Gio.Application") -> None:
+    def __init__(
+        self,
+        window: "Gtk.Window",
+        app: "Gio.Application",
+        toggle_callback=None,
+        is_running_callback=None,
+    ) -> None:
         self._window    = window
         self._app       = app
         self._conn: Gio.DBusConnection | None = None
@@ -166,6 +172,8 @@ class TrayService:
         self._menu_reg  = 0
         self._menu_rev  = 1
         self._tooltip   = "VlezeApp"
+        self._toggle_callback = toggle_callback
+        self._is_running_callback = is_running_callback
 
         # Удерживаем event-loop пока трей жив
         self._app.hold()
@@ -331,33 +339,45 @@ class TrayService:
 
     # ── Построение меню ───────────────────────────────────────────────────────
 
+    def _is_running(self) -> bool:
+        """Вернуть текущее состояние подключения."""
+        if self._is_running_callback:
+            return self._is_running_callback()
+        return False
+
     def _build_layout(self) -> tuple:
         """Вернуть корневой элемент меню в виде (id, props, children)."""
         visible    = self._window.is_visible()
         show_label = _("Hide VlezeApp") if visible else _("Show VlezeApp")
+        running    = self._is_running()
+        toggle_label = _("Stop") if running else _("Start")
 
         return (
             0,
             {"children-display": _v("s", "submenu")},
             [
-                _item(1, show_label, "view-restore-symbolic"),
+                _item(1, toggle_label, "media-playback-stop-symbolic" if running else "media-playback-start-symbolic"),
                 _separator(2),
-                _item(3, _("Quit"), "application-exit-symbolic"),
+                _item(3, show_label, "view-restore-symbolic"),
+                _separator(4),
+                _item(5, _("Quit"), "application-exit-symbolic"),
             ],
         )
 
     def _item_props(self, item_id: int) -> dict | None:
         visible = self._window.is_visible()
+        running = self._is_running()
         match item_id:
             case 0:
                 return {"children-display": _v("s", "submenu")}
             case 1:
-                label = _("Hide VlezeApp") if visible else _("Show VlezeApp")
+                toggle_label = _("Stop") if running else _("Start")
+                icon = "media-playback-stop-symbolic" if running else "media-playback-start-symbolic"
                 return {
-                    "label":     _v("s", label),
+                    "label":     _v("s", toggle_label),
                     "enabled":   _v("b", True),
                     "visible":   _v("b", True),
-                    "icon-name": _v("s", "view-restore-symbolic"),
+                    "icon-name": _v("s", icon),
                 }
             case 2:
                 return {
@@ -365,6 +385,19 @@ class TrayService:
                     "visible": _v("b", True),
                 }
             case 3:
+                label = _("Hide VlezeApp") if visible else _("Show VlezeApp")
+                return {
+                    "label":     _v("s", label),
+                    "enabled":   _v("b", True),
+                    "visible":   _v("b", True),
+                    "icon-name": _v("s", "view-restore-symbolic"),
+                }
+            case 4:
+                return {
+                    "type":    _v("s", "separator"),
+                    "visible": _v("b", True),
+                }
+            case 5:
                 return {
                     "label":     _v("s", _("Quit")),
                     "enabled":   _v("b", True),
@@ -377,9 +410,14 @@ class TrayService:
 
     def _on_click(self, item_id: int) -> None:
         if item_id == 1:
+            # Start/Stop
+            if self._toggle_callback:
+                GLib.idle_add(self._toggle_callback)
+            self._menu_rev += 1
+        elif item_id == 3:
             self._toggle_window()
             self._menu_rev += 1   # метка Show/Hide обновится при следующем открытии
-        elif item_id == 3:
+        elif item_id == 5:
             self._do_quit()
 
     def _toggle_window(self) -> None:
@@ -394,6 +432,18 @@ class TrayService:
         self._app.quit()
 
     # ── Публичный API ─────────────────────────────────────────────────────────
+
+    def update_menu(self) -> None:
+        """Обновить меню трея (вызывается при изменении состояния)."""
+        self._menu_rev += 1
+        if self._conn:
+            try:
+                self._conn.emit_signal(
+                    None, _MENU_PATH, _MENU_IFACE, "LayoutUpdated",
+                    GLib.Variant("(ui)", (self._menu_rev, 0)),
+                )
+            except Exception:
+                pass
 
     def set_tooltip(self, text: str) -> None:
         """Обновить подсказку иконки трея."""

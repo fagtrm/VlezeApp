@@ -66,6 +66,10 @@ class TestDefaultConfig:
         """close_to_tray should default to False."""
         assert app_config.close_to_tray is False
 
+    def test_default_start_minimized(self, app_config: AppConfig) -> None:
+        """start_minimized should default to False."""
+        assert app_config.start_minimized is False
+
     def test_creates_config_file(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
         """Initialisation should create the config.json file."""
         config_file = tmp_config_dir / "config.json"
@@ -89,6 +93,8 @@ class TestSaveLoad:
         app_config.remember_last_server = True
         app_config.last_server_name = "MyServer"
         app_config.autostart_xray = True
+        app_config.close_to_tray = True
+        app_config.start_minimized = True
         app_config._save_config()
 
         # Create a fresh instance that will reload from disk
@@ -96,6 +102,8 @@ class TestSaveLoad:
         assert fresh.remember_last_server is True
         assert fresh.last_server_name == "MyServer"
         assert fresh.autostart_xray is True
+        assert fresh.close_to_tray is True
+        assert fresh.start_minimized is True
 
     def test_save_writes_valid_json(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
         """The saved config file should be valid JSON."""
@@ -116,6 +124,7 @@ class TestSaveLoad:
             "last_server_name",
             "autostart_xray",
             "close_to_tray",
+            "start_minimized",
         }
         assert expected_keys.issubset(data.keys())
 
@@ -135,6 +144,7 @@ class TestSaveLoad:
         # Should have fallen back to defaults
         assert cfg.remember_last_server is False
         assert cfg.close_to_tray is False
+        assert cfg.start_minimized is False
 
     def test_is_valid_true(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
         """is_valid should return True when VLESS_DIR exists."""
@@ -153,6 +163,7 @@ class TestSaveLoad:
                 cfg.last_server_name = ""
                 cfg.autostart_xray = False
                 cfg.close_to_tray = False
+                cfg.start_minimized = False
                 assert cfg.is_valid() is False
 
 
@@ -197,3 +208,46 @@ class TestCloseToTray:
         with open(config_file, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         assert data["close_to_tray"] is True
+
+
+# ---------------------------------------------------------------------------
+# start_minimized
+# ---------------------------------------------------------------------------
+
+class TestStartMinimized:
+    """Tests for the start_minimized setting."""
+
+    def test_set_start_minimized_true(self, app_config: AppConfig) -> None:
+        """set_start_minimized(True) should update the attribute."""
+        app_config.set_start_minimized(True)
+        assert app_config.start_minimized is True
+
+    def test_set_start_minimized_false(self, app_config: AppConfig) -> None:
+        """set_start_minimized(False) should update the attribute."""
+        app_config.set_start_minimized(True)
+        app_config.set_start_minimized(False)
+        assert app_config.start_minimized is False
+
+    def test_set_start_minimized_persists(self, app_config: AppConfig) -> None:
+        """set_start_minimized should save the value to disk."""
+        app_config.set_start_minimized(True)
+
+        fresh = AppConfig()
+        assert fresh.start_minimized is True
+
+    def test_get_start_minimized_default(self, app_config: AppConfig) -> None:
+        """get_start_minimized should return False by default."""
+        assert app_config.get_start_minimized() is False
+
+    def test_get_start_minimized_after_set(self, app_config: AppConfig) -> None:
+        """get_start_minimized should reflect the last set value."""
+        app_config.set_start_minimized(True)
+        assert app_config.get_start_minimized() is True
+
+    def test_start_minimized_in_saved_file(self, app_config: AppConfig, tmp_config_dir: Path) -> None:
+        """The saved config file should contain the start_minimized value."""
+        app_config.set_start_minimized(True)
+        config_file = tmp_config_dir / "config.json"
+        with open(config_file, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        assert data["start_minimized"] is True

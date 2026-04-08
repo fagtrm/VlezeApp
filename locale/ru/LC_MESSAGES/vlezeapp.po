@@ -267,3 +267,10 @@ msgstr "Фильтр по имени, например whitelist..."
 
 msgid "Filter configs"
 msgstr "Фильтр конфигурации"
+
+# === Settings - Start minimized ===
+msgid "Start minimized to tray"
+msgstr "Запускать свёрнутым в трей"
+
+msgid "Application will start hidden in the system tray"
+msgstr "Приложение будет запускаться скрытым в системном трее"

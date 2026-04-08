@@ -27,6 +27,7 @@ class AppConfig:
         last_server_name: Name of the last selected server.
         autostart_xray: Whether to auto-start xray on application launch.
         close_to_tray: Whether closing the window hides it to the system tray.
+        start_minimized: Whether to start the application minimized to tray.
     """
 
     def __init__(self) -> None:
@@ -34,6 +35,7 @@ class AppConfig:
         self.last_server_name: str = ""
         self.autostart_xray: bool = False
         self.close_to_tray: bool = False
+        self.start_minimized: bool = False
 
         self._ensure_config_dir()
         self._load_or_create_config()
@@ -53,6 +55,7 @@ class AppConfig:
                     self.last_server_name = str(data.get("last_server_name", ""))
                     self.autostart_xray = bool(data.get("autostart_xray", False))
                     self.close_to_tray = bool(data.get("close_to_tray", False))
+                    self.start_minimized = bool(data.get("start_minimized", False))
             except (json.JSONDecodeError, KeyError):
                 self._save_config()
         else:
@@ -65,6 +68,7 @@ class AppConfig:
             "last_server_name": self.last_server_name,
             "autostart_xray": self.autostart_xray,
             "close_to_tray": self.close_to_tray,
+            "start_minimized": self.start_minimized,
         }
         with open(CONFIG_FILE, "w", encoding="utf-8") as fh:
             json.dump(data, fh, indent=2, ensure_ascii=False)
@@ -81,3 +85,12 @@ class AppConfig:
     def get_close_to_tray(self) -> bool:
         """Return whether the close-to-tray option is enabled."""
         return self.close_to_tray
+
+    def set_start_minimized(self, value: bool) -> None:
+        """Enable or disable the start-minimized behaviour."""
+        self.start_minimized = value
+        self._save_config()
+
+    def get_start_minimized(self) -> bool:
+        """Return whether the start-minimized option is enabled."""
+        return self.start_minimized
